@@ -50,6 +50,9 @@ button,.btn{font:inherit}
 /* cards */
 .card{--cink:#16202b;--cred:#c63a2d;position:relative;width:260px;min-height:364px;background:#f5f2e9;color:var(--cink);border:1px solid rgba(0,0,0,.45);border-radius:14px;box-shadow:0 12px 26px rgba(0,0,0,.55),inset 0 0 0 5px #f5f2e9,inset 0 0 0 6px rgba(22,32,43,.18);padding:58px 30px 48px;overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center}
 .card.red{color:var(--cred)}
+.ck{list-style:none;margin:2px 0 8px;padding:0;font-size:14px}
+.ck li{padding:2px 0;color:var(--text-secondary)}
+.ck li.ok{color:var(--text-success)}
 .card .idx{position:absolute;left:12px;top:8px;display:flex;flex-direction:column;align-items:center;line-height:1;font-family:var(--display);font-weight:700}
 .card .idx b{font-size:24px;font-weight:700;letter-spacing:-.01em}
 .card .idx i{font-style:normal;font-size:18px;margin-top:2px}
@@ -2385,6 +2388,16 @@ function checkAge(){
   ALLCL=settleClusters();const cities=ALLCL.filter(c=>c.kind==='city').length;
   if(popNow()<nx.pop||cities<nx.cities)return null;
   S.ages=(S.ages||[[0,0]]).concat([[S.seq,idx+1]]);S.ageAtPass=S.passes;return nx.n}
+/* the four things checkAge looks at for the next age, each with its current value */
+function ageChecklist(ai,nx){
+  const pDone=(S.passes||0)-(S.ageAtPass||0),items=[];
+  items.push({ok:pDone>=PASS_PER_AGE,txt:`${Math.min(pDone,PASS_PER_AGE)} of ${PASS_PER_AGE} deck passes in this age`});
+  if(DISC.some(d=>d[2]===ai)){const dc=discCount(ai);items.push({ok:dc>=PER_AGE_DISC,txt:`${Math.min(dc,PER_AGE_DISC)} of ${PER_AGE_DISC} ${AGES[ai].n} discoveries`})}
+  const pop=popNow(),cities=settleClusters().filter(c=>c.kind==='city').length;
+  items.push({ok:pop>=nx.pop,txt:`Population ${fmt(Math.min(Math.round(pop),nx.pop))} of ${fmt(nx.pop)}`});
+  if(nx.cities>0)items.push({ok:cities>=nx.cities,txt:`${Math.min(cities,nx.cities)} of ${nx.cities} cit${nx.cities===1?'y':'ies'}`});
+  const all=items.every(i=>i.ok);
+  return `<p class="t"><b>Requirements for the ${esc(nx.n)}</b> · ${all?'all met, the age turns at the next deck reshuffle':'checked at each deck reshuffle'}.</p><ul class="ck">${items.map(i=>`<li class="${i.ok?'ok':''}"><span aria-hidden="true">${i.ok?'✓':'○'}</span> ${esc(i.txt)}</li>`).join('')}</ul>`}
 /* ---------- science: settlements make it, it turns into named discoveries that each change one rule ---------- */
 const DISC=[['fire','Fire-keeping',0,{sci:1.1},'Science grows 10% faster.'],['irrig','Irrigation',0,{famine:0.85},'Famine losses fall by 15%.'],['herbs','Herb lore',0,{outbreak:0.85},'Outbreak deaths fall by 15%.'],['storage','Grain storage',0,{famine:0.9},'Famine losses fall by 10%.'],['count','Counting',0,{sci:1.15},'Science grows 15% faster.'],['writing','Writing',1,{sci:1.2},'Science grows 20% faster.'],['bronze','Bronze-working',1,{bust:0.9},'Busts cost 10% less.'],['bridges','Bridge-building',1,{fair:1.2},'Trade fairs draw 20% more.'],['calendar','The calendar',1,{famine:0.9},'Famine losses fall by 10%.'],['medicine','Medicine',1,{outbreak:0.8},'Outbreak deaths fall by 20%.'],['masonry','Masonry',2,{wonder:1.25},'Wonders draw 25% more people.'],['iron','Iron-working',2,{bust:0.9},'Busts cost 10% less.'],['nav','Navigation',2,{fair:1.2},'Trade fairs draw 20% more.'],['law','Law codes',2,{bust:0.9},'Busts cost 10% less.'],['math','Mathematics',2,{sci:1.2},'Science grows 20% faster.'],['press','Printing press',3,{sci:1.25,invention:1.2},'Science grows 25% faster and inventions are 20% stronger.'],['sanit','Sanitation',3,{outbreak:0.5},'Outbreak deaths halve.'],['steam','Steam power',3,{boom:1.2},'Booms are 20% bigger.'],['bank','Banking',3,{bust:0.85},'Busts cost 15% less.'],['method','The scientific method',3,{sci:1.25},'Science grows 25% faster.'],['germ','Germ theory',4,{outbreak:0.5},'Outbreak deaths halve.'],['elec','Electricity',4,{boom:1.2},'Booms are 20% bigger.'],['fridge','Refrigeration',4,{famine:0.7},'Famine losses fall by 30%.'],['telegraph','The telegraph',4,{fair:1.2},'Trade fairs draw 20% more.'],['chem','Chemistry',4,{invention:1.25},'Inventions are 25% stronger.'],['antibio','Antibiotics',5,{outbreak:0.4},'Outbreak deaths fall by 60%.'],['computing','Computing',5,{sci:1.3},'Science grows 30% faster.'],['fert','Fertilisers',5,{famine:0.6},'Famine losses fall by 40%.'],['broadcast','Broadcasting',5,{exhibition:1.2},'Exhibitions draw 20% more.'],['fusion','Fusion power',6,{boom:1.3},'Booms are 30% bigger.'],['elevator','Space elevator',6,{sci:1.3},'Science grows 30% faster.'],['climate','Climate engineering',6,{famine:0.5},'Famine losses halve.'],['genome','Genetic medicine',6,{outbreak:0.5},'Outbreak deaths halve.']];
 const PER_AGE_DISC=3,sciCost=ai=>450+150*ai;
@@ -3642,9 +3655,9 @@ async function fillStats(){
    evBlock=past.map(e=>{const hs=(e.hits||[]).slice(0,3).map(h=>h.n).join(', ');return `<div class="rc"><b>${esc(EVNAME[e.type]||e.type)}</b><div class="rm">${hs?esc(hs)+' · ':''}change ${e.seq}</div></div>`}).join('');
    const ru=ruinsAt(S.seq).filter(q=>q.first),standing=ru.filter(q=>q.now===0);
    ruinBlock=(ru.length?`<p class="t">${standing.length} ruin${standing.length===1?'':'s'} standing${ru.length>standing.length?`, ${ru.length-standing.length} built over`:''}.</p>`+ru.slice(-12).reverse().map(q=>`<div class="rc"><b>${q.now>0?'Rebuilt: ':'Ruins of '}${esc(q.name)}</b><div class="rm">lost to ${esc(q.cause)} in change ${q.seq}</div></div>`).join(''):'')}
-  {const ai=ageAt(S.seq),nx=AGES[ai+1],pi=passInfo(),need=nx?Math.max(0,PASS_PER_AGE-((S.passes||0)-(S.ageAtPass||0))):0;
+  {const ai=ageAt(S.seq),nx=AGES[ai+1],pi=passInfo();
    ageBlock=`<p class="t"><b>${esc(AGES[ai].n)}</b> · deck pass ${pi.pass}, ${pi.drawn} of ${pi.total} cards drawn${S.passEst?' (passes before this were estimated)':''}.</p>`+
-    ((S.deck.waiting||[]).length?`<p class="t">${(S.deck.waiting||[]).length} card${(S.deck.waiting||[]).length===1?'':'s'} waiting for their conditions.</p>`:'')+(nx?`<p class="t">Next: ${esc(nx.n)}. It needs ${need?`${need} more completed pass${need===1?'':'es'}, then `:''}${DISC.some(d=>d[2]===ai)&&discCount(ai)<PER_AGE_DISC?`${PER_AGE_DISC-discCount(ai)} more discover${PER_AGE_DISC-discCount(ai)===1?'y':'ies'}, then `:''}population ${fmt(nx.pop)} and ${nx.cities} cit${nx.cities===1?'y':'ies'}, checked when the deck reshuffles.</p>`:'<p class="t">The last age.</p>')+sciHTML()+
+    ((S.deck.waiting||[]).length?`<p class="t">${(S.deck.waiting||[]).length} card${(S.deck.waiting||[]).length===1?'':'s'} waiting for their conditions.</p>`:'')+(nx?ageChecklist(ai,nx):'<p class="t">The last age.</p>')+sciHTML()+
     `<p class="t">${(S.ages||[]).map(([q,i])=>`${esc(AGES[Math.min(i,AGES.length-1)].n)} from change ${q}`).join(' · ')}</p>`}
   const cl=climateAt(S.seq),ss=seasonNow(),tide=tideAt(S.seq),dims=ps.filter(p=>p.dim).length;
   let R=null;try{R=await realmMap(S.seq)}catch(e){}
