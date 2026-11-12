@@ -1139,13 +1139,13 @@ function drawCard(){
     S.cur={cardId:'seed'};
   } else {
     S.banner=null;const D=S.deck;D.waiting=D.waiting||[];unlockWaiting();
-    const locked=id=>{const c=D.cards[id];return c&&lockAge(c)>ageAt(S.seq)};let id=null,joined=[];
+    const locked=id=>{const c=D.cards[id];return c&&(lockAge(c)>ageAt(S.seq)||!needOK(c))};let id=null,joined=[];
     for(let tries=0;tries<3&&!id;tries++){
       if(!D.draw.length){if(!D.discard.length)break;D.draw=shuffle(D.discard);D.discard=[];
         S.passes=(S.passes||0)+1;S.passMarks=(S.passMarks||[]).concat([{n:S.passes,seq:S.seq,date:today()}]);
         const ag=checkAge();joined=ag?unlockWaiting():[];S.banner=ag?`Pass ${S.passes} is complete, and the ${ag} begins.${joined.length?' '+[...new Set(joined)].join(', ')+' joins the deck.':''}`:`Pass ${S.passes} is complete. The deck is shuffled.`}
       while(D.draw.length){const x=D.draw.shift();if(locked(x))D.waiting.push(x);else{id=x;break}}}
-    if(!id&&D.waiting.length)id=D.waiting.shift();
+    if(!id&&D.waiting.length){const k=D.waiting.findIndex(x=>!locked(x));id=D.waiting.splice(k>=0?k:0,1)[0]}
     S.cur={cardId:id};
   }
   S.last=null;dealNext=true;save();render();
@@ -2358,11 +2358,16 @@ const IAGE={'Shipbuilding':1,'Brewing & distilling':1,'Steelworks':3,'Machine wo
   'Iron mining':1,'Copper & tin mining':1,'Coal mining':2,'Ice cutting':1,'Sugar cane':1,'Rubber & hardwoods':2,'Whale oil':1,
   'Sawmill':1,'Brickworks':1,'Coaching inn':1,'Dyeworks':1,'Lacemaking':1,'Scrimshaw':1,'Cactus liquor':1,'Bladesmithing':1};
 const lockAge=c=>c&&c.kind==='link'?(LINKAGE[c.mode]||0):0;
+/* settlement cards wait outside the deck until the map has enough settlements: 1 = any settlement, 2 = two */
+const NEED={plague:1,famine:1,outbreak:1,granary:1,refugees:1,boom:1,bust:1,wonder:1,invention:1,discovery:1,festival:1,exhibition:1,
+  road:2,rail:2,air:2,fair:2,dispute:2,migration:2,declare:2,treaty:2,alliance:2,uprising:2,coup:2};
+const needOK=c=>{const n=c&&NEED[c.mode];if(!n)return true;const sc=settleCounts();return sc.city+sc.village+sc.hamlet>=n};
+const waitWhy=c=>lockAge(c)>ageAt(S.seq)?AGES[lockAge(c)].n:(NEED[c.mode]===2?'needs two settlements':'needs a settlement');
 const lockNote=c=>lockAge(c)>0?` Unlocks in the ${AGES[lockAge(c)].n}.`:'';
 /* cards that belong to a later age wait outside the deck and join it, shuffled in, when that age begins */
 function unlockWaiting(){
   const D=S.deck;D.waiting=D.waiting||[];const ag=ageAt(S.seq),out=[];
-  D.waiting=D.waiting.filter(id=>{const c=D.cards[id];if(c&&lockAge(c)<=ag){D.draw.splice(Math.floor(Math.random()*(D.draw.length+1)),0,id);out.push(c.name);return false}return true});
+  D.waiting=D.waiting.filter(id=>{const c=D.cards[id];if(c&&lockAge(c)<=ag&&needOK(c)){D.draw.splice(Math.floor(Math.random()*(D.draw.length+1)),0,id);out.push(c.name);return false}return true});
   return out}
 /* checked only when the deck reshuffles, so an age is never shorter than PASS_PER_AGE passes */
 function checkAge(){
@@ -3283,7 +3288,7 @@ function viewDeck(){
   return `${warn?`<p class="warn">${esc(warn)}</p>`:''}
   <div class="counts"><div><b>${D.draw.length}</b><small>Pile</small></div><div><b>${D.discard.length}</b><small>Discard</small></div><div><b>${D.retired.length}</b><small>Retired</small></div><div><b>${D.reserve.length}</b><small>Reserve</small></div></div>
   <h2>In the deck</h2><div class="chips">${inDeck.map(c=>chip(c)).join('')}</div>
-  ${(D.waiting||[]).length?`<h2>Waiting for a later age</h2><p class="hint" style="text-align:left">${(D.waiting||[]).map(id=>`${esc(D.cards[id].name)} (${esc(AGES[lockAge(D.cards[id])].n)})`).join(', ')}. They join the deck, shuffled in, when that age begins.</p>`:''}
+  ${(D.waiting||[]).length?`<h2>Waiting</h2><p class="hint" style="text-align:left">${(D.waiting||[]).map(id=>`${esc(D.cards[id].name)} (${esc(waitWhy(D.cards[id]))})`).join(', ')}. They join the deck, shuffled in, once their condition is met.</p>`:''}
   <h2>Retired rules</h2>${D.retired.length?`<div class="chips">${D.retired.map(id=>chip(D.cards[id],true)).join('')}</div>`:'<p class="hint" style="text-align:left">None yet. Retired instructions are kept here in case you want them back.</p>'}
   <h2>Reserve</h2><p class="hint" style="text-align:left">${D.reserve.length} cards wait outside the deck. Add Card brings one in without telling you which.</p>
   <div class="danger">${resetArm?`<button class="btn" data-act="resetgo" style="border-color:var(--red);color:var(--red)">Erase this map for good</button><button class="btn" data-act="resetno">Keep it</button>`:`<button class="btn" data-act="resetask">Erase this map and start over</button>`}</div>`;
@@ -3597,7 +3602,7 @@ async function fillStats(){
    ruinBlock=(ru.length?`<p class="t">${standing.length} ruin${standing.length===1?'':'s'} standing${ru.length>standing.length?`, ${ru.length-standing.length} built over`:''}.</p>`+ru.slice(-12).reverse().map(q=>`<div class="rc"><b>${q.now>0?'Rebuilt: ':'Ruins of '}${esc(q.name)}</b><div class="rm">lost to ${esc(q.cause)} in change ${q.seq}</div></div>`).join(''):'')}
   {const ai=ageAt(S.seq),nx=AGES[ai+1],pi=passInfo(),need=nx?Math.max(0,PASS_PER_AGE-((S.passes||0)-(S.ageAtPass||0))):0;
    ageBlock=`<p class="t"><b>${esc(AGES[ai].n)}</b> · deck pass ${pi.pass}, ${pi.drawn} of ${pi.total} cards drawn${S.passEst?' (passes before this were estimated)':''}.</p>`+
-    ((S.deck.waiting||[]).length?`<p class="t">${(S.deck.waiting||[]).length} card${(S.deck.waiting||[]).length===1?'':'s'} waiting for a later age.</p>`:'')+(nx?`<p class="t">Next: ${esc(nx.n)}. It needs ${need?`${need} more completed pass${need===1?'':'es'}, then `:''}population ${fmt(nx.pop)} and ${nx.cities} cit${nx.cities===1?'y':'ies'}, checked when the deck reshuffles.</p>`:'<p class="t">The last age.</p>')+
+    ((S.deck.waiting||[]).length?`<p class="t">${(S.deck.waiting||[]).length} card${(S.deck.waiting||[]).length===1?'':'s'} waiting for their conditions.</p>`:'')+(nx?`<p class="t">Next: ${esc(nx.n)}. It needs ${need?`${need} more completed pass${need===1?'':'es'}, then `:''}population ${fmt(nx.pop)} and ${nx.cities} cit${nx.cities===1?'y':'ies'}, checked when the deck reshuffles.</p>`:'<p class="t">The last age.</p>')+
     `<p class="t">${(S.ages||[]).map(([q,i])=>`${esc(AGES[Math.min(i,AGES.length-1)].n)} from change ${q}`).join(' · ')}</p>`}
   const cl=climateAt(S.seq),ss=seasonNow(),tide=tideAt(S.seq),dims=ps.filter(p=>p.dim).length;
   let R=null;try{R=await realmMap(S.seq)}catch(e){}
@@ -4048,3 +4053,4 @@ for(const id of['camIn','libIn'])$(id).addEventListener('change',e=>{const f=e.t
 if('serviceWorker' in navigator&&location.protocol==='https:'&&location.hostname!=='claude.ai'){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.warn('sw',e)))}
 </script>
 </html>
+

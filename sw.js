@@ -1,5 +1,5 @@
 /* Open Map offline cache. Bump CACHE when index.html changes so installed copies pick up the new version. */
-const CACHE = 'open-map-v1';
+const CACHE = 'open-map-v2';
 const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
