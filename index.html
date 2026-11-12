@@ -609,7 +609,7 @@ function ruleText(c){
     case 'adjust':return 'Change the numbers on three cards by 1 to 3.';
     case 'shuffle':return 'Shuffle the discard pile back into the draw pile.';
     case 'disaster':if(c.mode==='weather')return `A weather front crosses ${c.units} painted squares and harms no one. The Weather die picks what it is, tilted by the panel's biome and the season: blizzards on cold ground, dust in deserts, storms on wet land. The Level die sets how strong. It passes within a few changes. Storms and blizzards close roads and railways, dust closes roads, and flights are grounded by storms, blizzards, dust and fog. Heat haze adds a level to a wildfire there, and a storm adds one to a flood. Weather also bends the flora (heat scorches it, blizzards frost it, storms flush it green, dust strips it) and the output of nearby villages and ports: good rains lift a harvest, while storm damage, scorching, frost, dust and fog can spoil one.`;return `${c.mode==='any'?'A random disaster':DIS[c.mode].n} strikes ${c.units} painted squares. ${c.mode==='any'?'':DIS[c.mode].w+' '}The Level die sets the damage: 1 to 2 settlements drop a tier, 3 to 4 two tiers, 5 to 6 raze them. Walls take one level less. The scar fades as the map changes.`;
-    case 'event':return {boom:'One settlement booms. Two Place dice pick where, and the Level die sets how many people arrive. The extra people fade away over a few changes.',bust:'Trade dries up in one settlement and people leave to look for work. The Level die sets how many. Some come back over time.',fair:'A great fair fills one settlement and the places it trades with with merchants and visitors, for a short while.',discovery:'A rich find draws prospectors and traders to one settlement. Its population rises for a good while.',granary:'One settlement and its trading partners store grain. For a time they cannot go short of food.',refugees:'People flee the hungriest settlement, or the one the dice pick if none is hungry, and settle in the nearest larger place. The Level die sets how many.',invention:'A new method is devised in one settlement and spreads along its roads. People gather where it is used.',wonder:'A city raises a wonder. It adds people for good and is named on the map.',exhibition:'A great exhibition in one of the biggest cities draws visitors to every city.',outbreak:'Sickness breaks out in one settlement and follows its roads to the places it trades with. Two Place dice pick where, and the Level die sets how many people die. The dead are missed for a while, and the places hit produce less until it passes.',famine:'The harvest fails in farming villages and hamlets, as many as the Level die allows. People starve, output drops, and the places they trade with feel it.',migration:'People leave one settlement for the nearest as large or larger. The Level die sets how many. The place that loses them produces less for a while and the place that gains them produces more.',festival:'One settlement holds a festival and the places it trades with send visitors. Output rises for a few changes. Nobody is hurt.',dispute:'Two neighbouring realms quarrel over their border. Every road, railway and flight path between them is closed for a while, and their capitals suffer.'}[c.mode];
+    case 'event':return {boom:'One settlement booms. Two Place dice pick where, and the Level die sets how many people arrive. The extra people fade away over a few changes.',bust:'Trade dries up in one settlement and people leave to look for work. The Level die sets how many. Some come back over time.',fair:'A great fair fills one settlement and the places it trades with with merchants and visitors, for a short while.',discovery:'A rich find draws prospectors and traders to one settlement. Its population rises for a good while, and science gets a boost.',granary:'One settlement and its trading partners store grain. For a time they cannot go short of food.',refugees:'People flee the hungriest settlement, or the one the dice pick if none is hungry, and settle in the nearest larger place. The Level die sets how many.',invention:'A new method is devised in one settlement and spreads along its roads. People gather where it is used, and science gets a boost.',wonder:'A city raises a wonder. It adds people for good and is named on the map.',exhibition:'A great exhibition in one of the biggest cities draws visitors to every city.',outbreak:'Sickness breaks out in one settlement and follows its roads to the places it trades with. Two Place dice pick where, and the Level die sets how many people die. The dead are missed for a while, and the places hit produce less until it passes.',famine:'The harvest fails in farming villages and hamlets, as many as the Level die allows. People starve, output drops, and the places they trade with feel it.',migration:'People leave one settlement for the nearest as large or larger. The Level die sets how many. The place that loses them produces less for a while and the place that gains them produces more.',festival:'One settlement holds a festival and the places it trades with send visitors. Output rises for a few changes. Nobody is hurt.',dispute:'Two neighbouring realms quarrel over their border. Every road, railway and flight path between them is closed for a while, and their capitals suffer.'}[c.mode];
     case 'realm':return {treaty:'Envoys end a war, or calm the angriest pair of realms if none is at war. The Level die only decides how it is told.',declare:'Two neighbouring realms that are free to fight go to war. The Place dice pick which pair, from the ones with the most tension. Routes across their border close.',uprising:'The biggest realm with a second city sees that city rise and break away as a realm of its own. The two go to war.',coup:'In a realm with two or more cities, the court moves to the second city. The realm takes the new capital\'s name.',alliance:'Two neighbouring realms with little tension swear an alliance. They will not fight each other, and if one goes to war the other joins in against any enemy it borders.'}[c.mode];
     case 'land':return {canal:'A canal is cut across a narrow neck of the biggest landmass and joined to the sea on both sides. It can split a landmass in two. Places in its path are lost.',dam:'A river is dammed and a lake fills low inland ground. The Level die sets how large. Places under it are lost.',inlandsea:'The sea breaks into a low basin in the heart of the biggest landmass and drowns it. The Level die sets how large. Places under it are lost.',iceage:'The world turns bitterly cold and the sea falls. The Level die sets how deep.'}[c.mode];
     case 'rift':return 'A crack opens in the biggest landmass. The Place dice pick which coast it starts from, and the Level die sets how wide: 1 to 3 narrow, 4 to 5 wider, 6 wide. It runs through low ground to a far coast and the sea fills it, so one landmass can become two. Places on the rift are lost.';
@@ -1225,7 +1225,10 @@ function finishCard(card,extra){
   S.log.push({date:today(),seq:S.seq,card:card.name,color:card.color,units:card.units,kind:card.kind,...(card.kind==='realm'?{cat:['declare','treaty','uprising'].includes(card.mode)?'war':'realm'}:{}),...extra});
   if(card.id!=='seed')S.deck.discard.push(card.id);
   S.last=extra.text;S.cur=null;S.banner=null;RES=null;PH=null;VIEW=null;
-  save({logs:[S.log.length],panels:extra.target?[extra.target].concat(extra.also||[]):[]});render();
+  save({logs:[S.log.length],panels:extra.target?[extra.target].concat(extra.also||[]):[]});
+  {const n0=S.log.length;try{tickScience();if(card.name==='Great Calamity')forgetOne('the Great Calamity')}catch(e){console.warn('science',e)}
+   save(S.log.length>n0?{logs:Array.from({length:S.log.length-n0},(_,i)=>n0+i+1)}:undefined)}
+  render();
   tickSupply().then(async ch=>{let c2=false;const n0=S.log.length;try{c2=await tickWar()}catch(e){console.warn('war',e)}
     const added=S.log.length>n0;if(ch||c2||added){save(added?{logs:Array.from({length:S.log.length-n0},(_,i)=>n0+i+1)}:undefined);render()}}).catch(e=>console.warn('supply',e));
 }
@@ -2075,7 +2078,7 @@ async function landWork(card){
     return finishCard(card,{text:`Level ${L}. An ice age closes in. The world turns bitterly cold and the sea falls.`,dice})}
   finishCard(card,{text:'Nothing came of it.',dice})}
 const NEWCARDS11=[['Boom','red',5,'event','boom'],['Bust','black',5,'event','bust'],['Trade Fair','red',4,'event','fair'],['Discovery','red',4,'event','discovery'],['Granary','black',4,'event','granary'],['Refugees','black',4,'event','refugees'],['Invention','red',4,'event','invention'],['Wonder','red',6,'event','wonder'],['Great Exhibition','black',6,'event','exhibition'],['Treaty','red',4,'realm','treaty'],['Declaration','black',4,'realm','declare'],['Uprising','black',4,'realm','uprising'],['Coup','red',4,'realm','coup'],['Alliance','red',4,'realm','alliance'],['Canal','red',6,'land','canal'],['Dam','black',6,'land','dam'],['Inland Sea','black',6,'land','inlandsea'],['Ice Age','black',6,'land','iceage']];
-const wonderPop=()=>(S.wonders||[]).filter(w=>w.seq<=S.seq).length*400;
+const wonderPop=()=>Math.round((S.wonders||[]).filter(w=>w.seq<=S.seq).length*400*dfx('wonder'));
 /* ---------- ruins: squares of settlement that a void, erosion, disaster or dimension wiped out ---------- */
 let RUIN=null;
 const RUINCARD=/void|erosion|dimension|calamity|wildfire|flood|quake|eruption|meteor|plague|landslide|drought|tsunami/i;
@@ -2223,7 +2226,7 @@ const isNote=l=>!!(l.note||l.kind==='war');
 const nDraws=()=>S.log.reduce((n,l)=>n+(isNote(l)?0:1),0);
 const logCat=l=>l.cat||(l.kind==='war'?'war':l.kind==='realm'?'realm':'');
 const histAdd=(w,x,p)=>{if(!w)return;(w.hist=w.hist||[]).push(p?{s:S.seq,t:w.tk,x,p}:{s:S.seq,t:w.tk,x});if(w.hist.length>30)w.hist.shift()};
-const noteLog=(cat,text,w,p)=>{S.log.push({date:today(),seq:S.seq,card:cat==='war'?'War':'Realm',color:cat==='war'?'red':'black',units:0,kind:cat==='war'?'war':'realmnote',cat,note:true,text});histAdd(w,text,p)};
+const noteLog=(cat,text,w,p)=>{S.log.push({date:today(),seq:S.seq,card:({war:'War',sci:'Science'})[cat]||'Realm',color:cat==='war'?'red':'black',units:0,kind:cat==='war'?'war':'realmnote',cat,note:true,text});histAdd(w,text,p)};
 const warLog=(text,w,p)=>noteLog('war',text,w,p);
 const HOWEND={peace:'ended in peace',treaty:'ended by treaty',conquest:'ended when one realm fell',vanished:'ended when a realm ceased to exist'};
 const capName=cap=>{const r=RLM&&RLM.realms.find(x=>x.cap===cap);return r?r.name:cap};
@@ -2314,6 +2317,7 @@ async function tickWar(){
         if(lead)w.lead=lead}
       else{for(const c of theirs)S.fealty[plainName(c)]=W.cap;
         warLog(`${Lo.name} has fallen. ${W.name} now holds all its lands.`,w);
+        if(hash(SD()+'fall'+S.seq)%2)forgetOne('the fall of '+Lo.name);
         if(Array.isArray(S.realmCaps))S.realmCaps=S.realmCaps.filter(x=>x!==Lo.cap);
         endWar(w,'conquest',c=>(by.get(c)||{name:c}).name);S.tens[pk(w.a,w.b)]=0;continue}}
     if(w.tk>=w.dur){
@@ -2373,9 +2377,41 @@ function unlockWaiting(){
 function checkAge(){
   const idx=ageAt(S.seq),nx=AGES[idx+1];if(!nx)return null;
   if((S.passes||0)-(S.ageAtPass||0)<PASS_PER_AGE)return null;
+  if(DISC.some(d=>d[2]===idx)&&discCount(idx)<PER_AGE_DISC)return null;
   ALLCL=settleClusters();const cities=ALLCL.filter(c=>c.kind==='city').length;
   if(popNow()<nx.pop||cities<nx.cities)return null;
   S.ages=(S.ages||[[0,0]]).concat([[S.seq,idx+1]]);S.ageAtPass=S.passes;return nx.n}
+/* ---------- science: settlements make it, it turns into named discoveries that each change one rule ---------- */
+const DISC=[['fire','Fire-keeping',0,{sci:1.1},'Science grows 10% faster.'],['irrig','Irrigation',0,{famine:0.85},'Famine losses fall by 15%.'],['herbs','Herb lore',0,{outbreak:0.85},'Outbreak deaths fall by 15%.'],['storage','Grain storage',0,{famine:0.9},'Famine losses fall by 10%.'],['count','Counting',0,{sci:1.15},'Science grows 15% faster.'],['writing','Writing',1,{sci:1.2},'Science grows 20% faster.'],['bronze','Bronze-working',1,{bust:0.9},'Busts cost 10% less.'],['bridges','Bridge-building',1,{fair:1.2},'Trade fairs draw 20% more.'],['calendar','The calendar',1,{famine:0.9},'Famine losses fall by 10%.'],['medicine','Medicine',1,{outbreak:0.8},'Outbreak deaths fall by 20%.'],['masonry','Masonry',2,{wonder:1.25},'Wonders draw 25% more people.'],['iron','Iron-working',2,{bust:0.9},'Busts cost 10% less.'],['nav','Navigation',2,{fair:1.2},'Trade fairs draw 20% more.'],['law','Law codes',2,{bust:0.9},'Busts cost 10% less.'],['math','Mathematics',2,{sci:1.2},'Science grows 20% faster.'],['press','Printing press',3,{sci:1.25,invention:1.2},'Science grows 25% faster and inventions are 20% stronger.'],['sanit','Sanitation',3,{outbreak:0.5},'Outbreak deaths halve.'],['steam','Steam power',3,{boom:1.2},'Booms are 20% bigger.'],['bank','Banking',3,{bust:0.85},'Busts cost 15% less.'],['method','The scientific method',3,{sci:1.25},'Science grows 25% faster.'],['germ','Germ theory',4,{outbreak:0.5},'Outbreak deaths halve.'],['elec','Electricity',4,{boom:1.2},'Booms are 20% bigger.'],['fridge','Refrigeration',4,{famine:0.7},'Famine losses fall by 30%.'],['telegraph','The telegraph',4,{fair:1.2},'Trade fairs draw 20% more.'],['chem','Chemistry',4,{invention:1.25},'Inventions are 25% stronger.'],['antibio','Antibiotics',5,{outbreak:0.4},'Outbreak deaths fall by 60%.'],['computing','Computing',5,{sci:1.3},'Science grows 30% faster.'],['fert','Fertilisers',5,{famine:0.6},'Famine losses fall by 40%.'],['broadcast','Broadcasting',5,{exhibition:1.2},'Exhibitions draw 20% more.'],['fusion','Fusion power',6,{boom:1.3},'Booms are 30% bigger.'],['elevator','Space elevator',6,{sci:1.3},'Science grows 30% faster.'],['climate','Climate engineering',6,{famine:0.5},'Famine losses halve.'],['genome','Genetic medicine',6,{outbreak:0.5},'Outbreak deaths halve.']];
+const PER_AGE_DISC=3,sciCost=ai=>450+150*ai;
+const sciS=()=>S.sci||(S.sci={pts:0,got:[]});
+const discOf=id=>DISC.find(d=>d[0]===id);
+const discAt=step=>sciS().got.filter(g=>g.seq<=step&&!(g.lost!=null&&g.lost<=step));
+const dfx=(k,step=S.seq)=>{let m=1;for(const g of discAt(step)){const d=discOf(g.id);if(d&&d[3][k]!=null)m*=d[3][k]}return m};
+const sciHalved=()=>(S.wars||[]).length>0||supplyPop()<0;
+function sciRate(){const sc=settleCounts();let r=sc.city*1.5+sc.village*.5+(S.wonders||[]).filter(w=>w.seq<=S.seq).length*3;if(sciHalved())r*=.5;return r*dfx('sci')}
+const discCount=(ai,step=S.seq)=>discAt(step).filter(g=>{const d=discOf(g.id);return d&&d[2]===ai}).length;
+/* run once per change: science accrues, and a discovery is made when enough has built up */
+function tickScience(){
+  const s=sciS(),r=sciRate();if(!r)return;s.pts+=r;
+  const ai=ageAt(S.seq),have=new Set(discAt(S.seq).map(g=>g.id)),pool=DISC.filter(d=>d[2]<=ai&&!have.has(d[0])),cost=sciCost(ai);
+  if(!pool.length){s.pts=Math.min(s.pts,cost*2);return}
+  if(s.pts<cost)return;
+  const cur=pool.filter(d=>d[2]===ai),from=cur.length?cur:pool,d=from[hash(SD()+'disc'+S.seq+have.size)%from.length];
+  s.pts-=cost;s.got.push({id:d[0],seq:S.seq});
+  noteLog('sci',`${d[1]} was discovered. ${d[4]}`)}
+/* a collapse can lose a discovery; it may be found again later */
+function forgetOne(why){
+  const act=discAt(S.seq);if(!act.length)return;
+  const g=act[hash(SD()+'forget'+S.seq)%act.length],d=discOf(g.id);g.lost=S.seq;
+  noteLog('sci',`${d[1]} was forgotten after ${why}.`)}
+function sciHTML(){
+  const s=sciS(),ai=ageAt(S.seq),act=discAt(S.seq),list=DISC.filter(d=>d[2]===ai).length;
+  let h=`<p class="t"><b>Science</b> · ${Math.round(sciRate()*10)/10} a change${sciHalved()?' (halved by war or shortage)':''} · ${Math.floor(s.pts)} of ${sciCost(ai)} toward the next discovery. ${discCount(ai)} of ${list} ${esc(AGES[ai].n)} discoveries made${AGES[ai+1]&&list?` (${PER_AGE_DISC} are needed for the next age)`:''}.</p>`;
+  if(act.length)h+=act.slice().reverse().map(g=>{const d=discOf(g.id);return `<div class="rc"><b>${esc(d[1])}</b><div class="rm">${esc(d[4])} · change ${g.seq}</div></div>`}).join('');
+  const lost=s.got.filter(g=>g.seq<=S.seq&&g.lost!=null&&g.lost<=S.seq);
+  if(lost.length)h+=`<p class="t">Forgotten: ${lost.map(g=>esc(discOf(g.id)[1])).join(', ')}.</p>`;
+  return h}
 function evPopLine(cl){const ev=evFor(cl),sd=supDef(cl),net=ev.reduce((s,x)=>s+x.pop,0)-sd,why=[...new Set(ev.filter(x=>x.pop).map(x=>x.why))];if(sd)why.push('short of '+shortOf(cl).map(x=>x.label).join(' and '));return net?`Population ${net>0?'+':'−'}${fmt(Math.abs(net))} for now (${why.join(', ')})`:''}
 async function evWork(card){
   ALLCL=settleClusters();
@@ -2387,12 +2423,12 @@ async function evWork(card){
   const hits=[],add=(c,dir,why,pop)=>{if(!hits.some(h=>h.n===plainName(c)))hits.push({n:plainName(c),dir,why,pop:Math.round(pop)})};
   let text,life=EVLIFE[m]||EVLIFE.migration,deaths=0,extra={};
   if(m==='outbreak'){
-    const pc=.12+L*.06,dA=popOf(A)*pc;add(A,-1,'outbreak',-dA);deaths+=dA;const ms=mates(A);
+    const pc=(.12+L*.06)*dfx('outbreak'),dA=popOf(A)*pc;add(A,-1,'outbreak',-dA);deaths+=dA;const ms=mates(A);
     for(const o of ms){const d=popOf(o)*pc/2;add(o,-1,'sickness along the roads',-d);deaths+=d}
     text=`Sickness broke out in ${plainName(A)} (level ${L})${ms.length?` and followed the roads to ${ms.map(plainName).join(', ')}`:''}. ${fmt(Math.round(deaths))} people died.`;
   } else if(m==='famine'){
     const farm=cls.filter(c=>{if(c.kind==='city')return false;const e=econOf(c),mk=c.kind==='village'?e.spec[0][3]:e.other[0][3];return FARM.has(mk)});
-    const pool=farm.length?farm:[A],n=Math.min(pool.length,1+Math.ceil(L/2)),start=((a1-1)*6+(a2-1))%pool.length,pc=.08+L*.04;
+    const pool=farm.length?farm:[A],n=Math.min(pool.length,1+Math.ceil(L/2)),start=((a1-1)*6+(a2-1))%pool.length,pc=(.08+L*.04)*dfx('famine');
     for(let k=0;k<n;k++){const c=pool[(start+k)%pool.length],d=popOf(c)*pc;add(c,-1,'famine',-d);deaths+=d;for(const o of mates(c))add(o,0,'hungry mouths arrive and prices climb',0)}
     text=`The harvest failed ${farm.length?'around':'at'} ${hits.filter(h=>h.dir<0).map(h=>h.n).join(', ')} (level ${L}). ${fmt(Math.round(deaths))} people starved.`;
   } else if(m==='migration'){
@@ -2404,13 +2440,13 @@ async function evWork(card){
     add(A,1,'festival',0);const ms=mates(A);for(const o of ms)add(o,1,'visitors for the festival',0);
     text=`${plainName(A)} held a festival (level ${L})${ms.length?`, and crowds came from ${ms.map(plainName).join(', ')}`:''}.`;
   } else if(m==='boom'||m==='discovery'||m==='invention'){
-    const k={boom:.1+L*.04,discovery:.06+L*.03,invention:.05+L*.03}[m],why={boom:'a boom',discovery:'a new find',invention:'a new method'}[m],ms=m==='invention'?mates(A):[];
+    const k={boom:(.1+L*.04)*dfx('boom'),discovery:.06+L*.03,invention:(.05+L*.03)*dfx('invention')}[m],why={boom:'a boom',discovery:'a new find',invention:'a new method'}[m],ms=m==='invention'?mates(A):[];
     add(A,1,why,popOf(A)*k);for(const o of ms)add(o,1,'the new method spreads',popOf(o)*k/2);
     text={boom:`${plainName(A)} boomed (level ${L}). Trade and building surged and people flocked in.`,discovery:`A rich find was made near ${plainName(A)} (level ${L}). Prospectors and traders arrived.`,invention:`A new method was devised in ${plainName(A)} (level ${L})${ms.length?` and spread along the roads to ${ms.map(plainName).join(', ')}`:''}.`}[m];
   } else if(m==='bust'){
-    const d=popOf(A)*(.1+L*.04);add(A,-1,'a bust',-d);text=`${plainName(A)} went bust (level ${L}). Trade dried up and people left to look for work.`;
+    const d=popOf(A)*(.1+L*.04)*dfx('bust');add(A,-1,'a bust',-d);text=`${plainName(A)} went bust (level ${L}). Trade dried up and people left to look for work.`;
   } else if(m==='fair'){
-    const ms=mates(A);add(A,1,'a trade fair',popOf(A)*.05);for(const o of ms)add(o,1,'merchants at the fair',popOf(o)*.03);
+    const ms=mates(A);add(A,1,'a trade fair',popOf(A)*.05*dfx('fair'));for(const o of ms)add(o,1,'merchants at the fair',popOf(o)*.03*dfx('fair'));
     text=`${plainName(A)} held a great trade fair (level ${L})${ms.length?`, and merchants came from ${ms.map(plainName).join(', ')}`:''}.`;
   } else if(m==='granary'){
     const ms=mates(A);add(A,1,'a granary',0);for(const o of ms)add(o,1,'drawing on the granary',0);
@@ -2427,7 +2463,7 @@ async function evWork(card){
   } else if(m==='exhibition'){
     const cs=cls.filter(c=>c.kind==='city').sort((p,q)=>popOf(q)-popOf(p));
     if(!cs.length){finishCard(card,{text:'There is no city to hold an exhibition.',dice:[]});return}
-    const T=cs[((a1-1)*6+(a2-1))%Math.min(3,cs.length)];add(T,1,'a great exhibition',popOf(T)*(.1+L*.02));
+    const T=cs[((a1-1)*6+(a2-1))%Math.min(3,cs.length)];add(T,1,'a great exhibition',popOf(T)*(.1+L*.02)*dfx('exhibition'));
     for(const o of cs)if(o!==T)add(o,1,'visitors to the exhibition',popOf(o)*.03);
     text=`${plainName(T)} held a great exhibition (level ${L}). Visitors poured in from every city.`;
   } else {
@@ -2439,6 +2475,7 @@ async function evWork(card){
     S.tens=S.tens||{};S.tens[pk(ra.cap,rb.cap)]=(S.tens[pk(ra.cap,rb.cap)]||0)+15;
     extra={ra:ra.cap,rb:rb.cap};text=`${ra.name} and ${rb.name} fell into a border dispute (level ${L}). Routes between them are closed for a while.`;
   }
+  if(m==='discovery'||m==='invention'){const g=Math.round((40+L*25)*dfx('sci'));sciS().pts+=g;text+=` Knowledge grew (+${g} science).`}
   S.seq++;if(deaths)S.lost+=Math.round(deaths);
   S.events=(S.events||[]).concat([{seq:S.seq,type:m==='refugees'?'migration':m,life,lvl:L,hits,...extra}]);mapStep=S.seq;
   finishCard(card,{text,dice});
@@ -3503,16 +3540,16 @@ function storyLine(l,n){
 let chFil='all';
 function viewLog(){
   if(!S.log.length)return `<p class="empty">The chronicle fills as you draw.</p>`;
-  const cnt={all:S.log.length,war:0,realm:0,card:0};for(const l of S.log){const c=logCat(l);if(c==='war')cnt.war++;else if(c==='realm')cnt.realm++;if(!isNote(l))cnt.card++}
-  if(!cnt.war&&!cnt.realm)chFil='all';else if(chFil!=='all'&&!cnt[chFil])chFil='all';
-  let day='',h=cnt.war||cnt.realm?`<div class="fils" role="group" aria-label="Filter the chronicle">${[['all','All'],['war','Wars'],['realm','Realms'],['card','Draws']].filter(([k])=>cnt[k]).map(([k,t])=>`<button class="btn fil" data-act="cfil" data-f="${k}" aria-pressed="${chFil===k}">${t} ${cnt[k]}</button>`).join('')}</div>`:'';
+  const cnt={all:S.log.length,war:0,realm:0,sci:0,card:0};for(const l of S.log){const c=logCat(l);if(c==='war')cnt.war++;else if(c==='realm')cnt.realm++;else if(c==='sci')cnt.sci++;if(!isNote(l))cnt.card++}
+  if(!cnt.war&&!cnt.realm&&!cnt.sci)chFil='all';else if(chFil!=='all'&&!cnt[chFil])chFil='all';
+  let day='',h=cnt.war||cnt.realm||cnt.sci?`<div class="fils" role="group" aria-label="Filter the chronicle">${[['all','All'],['war','Wars'],['realm','Realms'],['sci','Science'],['card','Draws']].filter(([k])=>cnt[k]).map(([k,t])=>`<button class="btn fil" data-act="cfil" data-f="${k}" aria-pressed="${chFil===k}">${t} ${cnt[k]}</button>`).join('')}</div>`:'';
   h+='<div class="chron">';let shown=0;
   S.log.map((l,i)=>({l,n:i+1})).reverse().forEach(({l,n})=>{
     const note=isNote(l);
     if(chFil==='card'?note:chFil!=='all'&&logCat(l)!==chFil)return;shown++;
     if(l.date!==day){day=l.date;h+=`<div class="day">${niceDate(l.date)}</div>`}
     const dice=l.dice&&l.dice.length?' · '+l.dice.map(d=>d.v).join(' '):'',tg=note?'div':'button',at=note?'':` data-act="chron" data-n="${n}"`;
-    h+=`<${tg} class="ch"${at}>${l.img&&IMG[l.img]?`<img alt="" src="${IMG[l.img]}">`:note?`<div class="ph ic ${l.color}">${logCat(l)==='war'?'⚔':'◆'}</div>`:'<div class="ph"></div>'}<div><div class="s">${esc(storyLine(l,n))}</div><div class="n">${note?'':`#${n} · `}<span class="${l.color}">${esc(l.card)}${NUMKIND.has(l.kind)?' '+l.units:''}</span>${dice}</div></div></${tg}>`});
+    h+=`<${tg} class="ch"${at}>${l.img&&IMG[l.img]?`<img alt="" src="${IMG[l.img]}">`:note?`<div class="ph ic ${l.color}">${logCat(l)==='war'?'⚔':logCat(l)==='sci'?'✦':'◆'}</div>`:'<div class="ph"></div>'}<div><div class="s">${esc(storyLine(l,n))}</div><div class="n">${note?'':`#${n} · `}<span class="${l.color}">${esc(l.card)}${NUMKIND.has(l.kind)?' '+l.units:''}</span>${dice}</div></div></${tg}>`});
   if(!shown)h+='<p class="empty">Nothing here yet.</p>';
   return h+'</div>';
 }
@@ -3602,7 +3639,7 @@ async function fillStats(){
    ruinBlock=(ru.length?`<p class="t">${standing.length} ruin${standing.length===1?'':'s'} standing${ru.length>standing.length?`, ${ru.length-standing.length} built over`:''}.</p>`+ru.slice(-12).reverse().map(q=>`<div class="rc"><b>${q.now>0?'Rebuilt: ':'Ruins of '}${esc(q.name)}</b><div class="rm">lost to ${esc(q.cause)} in change ${q.seq}</div></div>`).join(''):'')}
   {const ai=ageAt(S.seq),nx=AGES[ai+1],pi=passInfo(),need=nx?Math.max(0,PASS_PER_AGE-((S.passes||0)-(S.ageAtPass||0))):0;
    ageBlock=`<p class="t"><b>${esc(AGES[ai].n)}</b> · deck pass ${pi.pass}, ${pi.drawn} of ${pi.total} cards drawn${S.passEst?' (passes before this were estimated)':''}.</p>`+
-    ((S.deck.waiting||[]).length?`<p class="t">${(S.deck.waiting||[]).length} card${(S.deck.waiting||[]).length===1?'':'s'} waiting for their conditions.</p>`:'')+(nx?`<p class="t">Next: ${esc(nx.n)}. It needs ${need?`${need} more completed pass${need===1?'':'es'}, then `:''}population ${fmt(nx.pop)} and ${nx.cities} cit${nx.cities===1?'y':'ies'}, checked when the deck reshuffles.</p>`:'<p class="t">The last age.</p>')+
+    ((S.deck.waiting||[]).length?`<p class="t">${(S.deck.waiting||[]).length} card${(S.deck.waiting||[]).length===1?'':'s'} waiting for their conditions.</p>`:'')+(nx?`<p class="t">Next: ${esc(nx.n)}. It needs ${need?`${need} more completed pass${need===1?'':'es'}, then `:''}${DISC.some(d=>d[2]===ai)&&discCount(ai)<PER_AGE_DISC?`${PER_AGE_DISC-discCount(ai)} more discover${PER_AGE_DISC-discCount(ai)===1?'y':'ies'}, then `:''}population ${fmt(nx.pop)} and ${nx.cities} cit${nx.cities===1?'y':'ies'}, checked when the deck reshuffles.</p>`:'<p class="t">The last age.</p>')+sciHTML()+
     `<p class="t">${(S.ages||[]).map(([q,i])=>`${esc(AGES[Math.min(i,AGES.length-1)].n)} from change ${q}`).join(' · ')}</p>`}
   const cl=climateAt(S.seq),ss=seasonNow(),tide=tideAt(S.seq),dims=ps.filter(p=>p.dim).length;
   let R=null;try{R=await realmMap(S.seq)}catch(e){}
@@ -4053,4 +4090,5 @@ for(const id of['camIn','libIn'])$(id).addEventListener('change',e=>{const f=e.t
 if('serviceWorker' in navigator&&location.protocol==='https:'&&location.hostname!=='claude.ai'){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.warn('sw',e)))}
 </script>
 </html>
+
 
