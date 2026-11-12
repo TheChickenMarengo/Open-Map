@@ -1138,7 +1138,7 @@ function drawCard(){
     S.deck.cards.seed={id:'seed',name:'Seed',color:'black',units:12,kind:'newpanel',mode:'photo',seed:true};
     S.cur={cardId:'seed'};
   } else {
-    S.banner=null;const D=S.deck;D.waiting=D.waiting||[];unlockWaiting();
+    S.banner=null;const D=S.deck;D.waiting=D.waiting||[];unlockWaiting();sweepWaiting();
     const locked=id=>{const c=D.cards[id];return c&&(lockAge(c)>ageAt(S.seq)||!needOK(c))};let id=null,joined=[];
     for(let tries=0;tries<3&&!id;tries++){
       if(!D.draw.length){if(!D.discard.length)break;D.draw=shuffle(D.discard);D.discard=[];
@@ -2368,6 +2368,10 @@ const NEED={plague:1,famine:1,outbreak:1,granary:1,refugees:1,boom:1,bust:1,wond
 const needOK=c=>{const n=c&&NEED[c.mode];if(!n)return true;const sc=settleCounts();return sc.city+sc.village+sc.hamlet>=n};
 const waitWhy=c=>lockAge(c)>ageAt(S.seq)?AGES[lockAge(c)].n:(NEED[c.mode]===2?'needs two settlements':'needs a settlement');
 const lockNote=c=>lockAge(c)>0?` Unlocks in the ${AGES[lockAge(c)].n}.`:'';
+/* any card whose age or settlement condition is not met is moved out of the draw pile, so the deck only holds cards that can happen */
+function sweepWaiting(){
+  const D=S.deck;if(!D||!D.draw)return;D.waiting=D.waiting||[];
+  for(const pile of ['draw','discard']){const keep=[];for(const id of D[pile]){const c=D.cards[id];if(c&&(lockAge(c)>ageAt(S.seq)||!needOK(c)))D.waiting.push(id);else keep.push(id)}D[pile]=keep}}
 /* cards that belong to a later age wait outside the deck and join it, shuffled in, when that age begins */
 function unlockWaiting(){
   const D=S.deck;D.waiting=D.waiting||[];const ag=ageAt(S.seq),out=[];
@@ -3320,6 +3324,7 @@ function startPlay(){
 }
 function chip(c,old){return `<span class="chip ${c.color}${old?' old':''}">${NUMKIND.has(c.kind)?`<b>${c.units}</b>`:'<b>·</b>'}${esc(c.name)}</span>`}
 function viewDeck(){
+  try{unlockWaiting();sweepWaiting()}catch(e){}
   const D=S.deck,inDeck=D.draw.concat(D.discard).map(id=>D.cards[id]).sort((a,b)=>a.name.localeCompare(b.name)||b.units-a.units);
   const warn=cloud.mode==='cloud'?(cloud.fail?`A save failed (${cloud.fail}). Your latest change may exist only on this device.`:''):cloud.loadFail?'Your saved map could not be reached, so drawing is paused. Reload the page to try again.':persist?'This map is kept on this device only and can disappear. Open the page from claude.ai while signed in to save it to your account.':'This browser is not saving. Progress lasts until you close the page.';
   return `${warn?`<p class="warn">${esc(warn)}</p>`:''}
@@ -4090,5 +4095,6 @@ for(const id of['camIn','libIn'])$(id).addEventListener('change',e=>{const f=e.t
 if('serviceWorker' in navigator&&location.protocol==='https:'&&location.hostname!=='claude.ai'){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(e=>console.warn('sw',e)))}
 </script>
 </html>
+
 
 
