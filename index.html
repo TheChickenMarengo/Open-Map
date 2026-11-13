@@ -2423,13 +2423,28 @@ function forgetOne(why){
   const act=discAt(S.seq);if(!act.length)return;
   const g=act[hash(SD()+'forget'+S.seq)%act.length],d=discOf(g.id);g.lost=S.seq;
   noteLog('sci',`${d[1]} was forgotten after ${why}.`)}
+/* science detail for Statistics: where points come from, what is active, what was made, and progress through the ages */
+const sciPct=m=>{const v=Math.round((m-1)*100);return (v>0?'+':'')+v+'%'};
+function sciDetail(){
+  const s=sciS(),ai=ageAt(S.seq),sc=settleCounts(),won=(S.wonders||[]).filter(w=>w.seq<=S.seq).length,r1=x=>Math.round(x*10)/10,rate=sciRate(),left=Math.max(0,sciCost(ai)-s.pts);
+  const have=new Set(discAt(S.seq).map(g=>g.id)),pool=DISC.filter(d=>d[2]<=ai&&!have.has(d[0]));
+  const kv=rs=>`<div class="kv">${rs.map(([k,v])=>`<span>${k}</span><span>${v}</span>`).join('')}</div>`;
+  const changes=Math.ceil(left/(rate||1));
+  const eta=!pool.length?'No discoveries are left to make in this age or earlier.':rate<=0?'No points are coming in.':`About ${changes} change${changes===1?'':'s'} to the next discovery at this rate.`;
+  const keys=new Set();for(const g of discAt(S.seq))for(const k of Object.keys(discOf(g.id)[3]))keys.add(k);
+  const LBL={sci:'Science speed',famine:'Famine losses',outbreak:'Outbreak deaths',bust:'Busts',boom:'Booms',fair:'Trade fairs',invention:'Inventions',exhibition:'Exhibitions',wonder:'Wonder population',warloss:'War losses',warstart:'War starts'};
+  const effects=keys.size?kv([...keys].map(k=>[LBL[k]||k,sciPct(dfx(k))])):'<p class="t">No discovery effects are active.</p>';
+  const hist=s.got.filter(g=>g.seq<=S.seq).slice().reverse().map(g=>{const d=discOf(g.id),lost=g.lost!=null&&g.lost<=S.seq;return `<div class="rc"><b>${esc(d[1])}</b><div class="rm">${esc(AGES[d[2]].n)} · made at change ${g.seq}${lost?` · forgotten at change ${g.lost}`:''}</div></div>`}).join('');
+  const agesH=AGES.map((a,i)=>{const total=DISC.filter(d=>d[2]===i).length;if(!total)return '';const held=discCount(i);return `<p class="t">${esc(a.n)}: ${held} of ${total} made${i===ai?` · ${Math.min(held,PER_AGE_DISC)} of ${PER_AGE_DISC} needed to advance`:''}</p>`}).join('');
+  return `<p class="t"><b>Where the points come from</b></p>`+kv([[`Cities (${sc.city})`,r1(sc.city*1.5)],[`Villages (${sc.village})`,r1(sc.village*.5)],[`Wonders (${won})`,r1(won*3)],['Halved by war or shortage',sciHalved()?'yes':'no'],['Discovery multiplier',sciPct(dfx('sci'))],['Per change',r1(rate)]])+`<p class="t">${esc(eta)}</p>`+
+    `<p class="t"><b>Active effects</b></p>${effects}`+(hist?`<p class="t"><b>Discovery history</b></p>${hist}`:'')+`<p class="t"><b>Ages</b></p>${agesH}`}
 function sciHTML(){
   const s=sciS(),ai=ageAt(S.seq),act=discAt(S.seq),list=DISC.filter(d=>d[2]===ai).length;
   let h=`<p class="t"><b>Science</b> · ${Math.round(sciRate()*10)/10} a change${sciHalved()?' (halved by war or shortage)':''} · ${Math.floor(s.pts)} of ${sciCost(ai)} toward the next discovery. ${discCount(ai)} of ${list} ${esc(AGES[ai].n)} discoveries made${AGES[ai+1]&&list?` (${PER_AGE_DISC} are needed for the next age)`:''}.</p>`;
   if(act.length)h+=act.slice().reverse().map(g=>{const d=discOf(g.id);return `<div class="rc"><b>${esc(d[1])}</b><div class="rm">${esc(d[4])} · change ${g.seq}</div></div>`}).join('');
   const lost=s.got.filter(g=>g.seq<=S.seq&&g.lost!=null&&g.lost<=S.seq);
   if(lost.length)h+=`<p class="t">Forgotten: ${lost.map(g=>esc(discOf(g.id)[1])).join(', ')}.</p>`;
-  return h}
+  return h+sciDetail()}
 function evPopLine(cl){const ev=evFor(cl),sd=supDef(cl),net=ev.reduce((s,x)=>s+x.pop,0)-sd,why=[...new Set(ev.filter(x=>x.pop).map(x=>x.why))];if(sd)why.push('short of '+shortOf(cl).map(x=>x.label).join(' and '));return net?`Population ${net>0?'+':'−'}${fmt(Math.abs(net))} for now (${why.join(', ')})`:''}
 async function evWork(card){
   ALLCL=settleClusters();
