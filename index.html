@@ -1135,6 +1135,14 @@ function pickSpill(key,cells,sp,seam){
 }
 
 /* ---------- ritual ---------- */
+/* A deck pass is a fixed number of draws: the size of the pile when it began. Shuffle moves cards around but does not restart the count. */
+function passInit(){const D=S.deck;if(S.passSize==null){S.passDrawn=D.discard.length;S.passSize=D.draw.length+D.discard.length}}
+function completePass(){
+  const D=S.deck;S.passes=(S.passes||0)+1;S.passMarks=(S.passMarks||[]).concat([{n:S.passes,seq:S.seq,date:today()}]);
+  S.passDrawn=0;S.passSize=D.draw.length+D.discard.length;
+  const ag=checkAge();const joined=ag?unlockWaiting():[];
+  S.banner=ag?`Pass ${S.passes} is complete, and the ${ag} begins.${joined.length?' '+[...new Set(joined)].join(', ')+' joins the deck.':''}`:`Pass ${S.passes} is complete.`;
+}
 function drawCard(){
   RES=null;PH=null;
   if(!Object.keys(S.panels).length){
@@ -1143,13 +1151,12 @@ function drawCard(){
   } else {
     S.banner=null;const D=S.deck;D.waiting=D.waiting||[];unlockWaiting();sweepWaiting();
     const locked=id=>{const c=D.cards[id];return c&&(lockAge(c)>ageAt(S.seq)||!needOK(c))};let id=null,joined=[];
+    passInit();if(S.passDrawn>=S.passSize)completePass();
     for(let tries=0;tries<3&&!id;tries++){
-      if(!D.draw.length){if(!D.discard.length)break;D.draw=shuffle(D.discard);D.discard=[];
-        S.passes=(S.passes||0)+1;S.passMarks=(S.passMarks||[]).concat([{n:S.passes,seq:S.seq,date:today()}]);
-        const ag=checkAge();joined=ag?unlockWaiting():[];S.banner=ag?`Pass ${S.passes} is complete, and the ${ag} begins.${joined.length?' '+[...new Set(joined)].join(', ')+' joins the deck.':''}`:`Pass ${S.passes} is complete. The deck is shuffled.`}
+      if(!D.draw.length){if(!D.discard.length)break;D.draw=shuffle(D.discard);D.discard=[]}
       while(D.draw.length){const x=D.draw.shift();if(locked(x))D.waiting.push(x);else{id=x;break}}}
     if(!id&&D.waiting.length){const k=D.waiting.findIndex(x=>!locked(x));id=D.waiting.splice(k>=0?k:0,1)[0]}
-    S.cur={cardId:id};
+    S.cur={cardId:id};if(id)S.passDrawn++;
   }
   S.last=null;dealNext=true;save();render();
 }
@@ -2360,7 +2367,7 @@ const popNow=()=>Math.max(0,popTotal()+eventPop(S.seq)+supplyPop()+warDef()+wond
 const AGES=[{n:'Dawn Age'},{n:'Hearth Age',pop:3000,cities:0},{n:'Forge Age',pop:9000,cities:1},{n:'Steam Age',pop:24000,cities:2},{n:'Wire Age',pop:60000,cities:4},{n:'Signal Age',pop:120000,cities:6},{n:'Orbital Age',pop:250000,cities:8}];
 const PASS_PER_AGE=3;
 const ageAt=step=>{let a=0;for(const [q,i] of S.ages||[])if(q<=step)a=i;return Math.min(a,AGES.length-1)};
-function passInfo(){const D=S.deck,cur=S.cur&&S.cur.cardId!=='seed'?1:0;return{pass:(S.passes||0)+1,drawn:D.discard.length+cur,total:D.draw.length+D.discard.length+cur}}
+function passInfo(){passInit();return{pass:(S.passes||0)+1,drawn:S.passDrawn,total:S.passSize}}
 /* what each age unlocks: routes by card mode, and industries by name (anything unlisted has always existed) */
 const LINKAGE={road:0,rail:3,air:4};
 const IAGE={'Shipbuilding':1,'Brewing & distilling':1,'Steelworks':3,'Machine works':3,'Textile mills':2,'Glassworks':2,'Printing & publishing':2,'Banking & finance':3,'Tanneries & leather':1,'Chemical works':3,'Clockmaking & instruments':2,'Food canning':3,'Furniture making':1,'Paper mills':2,'Locomotive works':3,'Plantation exchange':1,'Whaling & sealing':1,'Timber export':1,
