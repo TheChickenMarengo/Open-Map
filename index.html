@@ -560,6 +560,11 @@ const NEWCARDS7=[['Cold Snap','black',1,'climate','cold'],['Heatwave','red',1,'c
 /* Some windows force the darkroom to draw from a family of edits (1-based indices into EDITS). */
 const POOLS={'Water Window':[13,14,15],'Green Window':[16,17,19,20],'Dry Window':[17,18],'Colour Window':[4,5,7,8],'Pattern Window':[9,10,11],'Warp Window':[1,2,6]};
 let ADDSEQ=0;
+/* Sundering, Canal and Inland Sea broke the continent too often, so they sit in the reserve now and only come in through Add Card. Maps made earlier get them moved out of the piles once. */
+function retuneLandCards(){
+  const D=S.deck,mv=id=>{const c=D.cards[id];return c&&((c.kind==='rift'&&c.name==='Sundering')||(c.kind==='land'&&(c.mode==='canal'||c.mode==='inlandsea')))};let gone=0;
+  for(const k of ['draw','discard','waiting']){const keep=[];for(const id of D[k]||[]){if(mv(id)){D.reserve.push(id);if(k!=='waiting')gone++}else keep.push(id)}D[k]=keep}
+  D.reserve=shuffle(D.reserve);if(S.passSize!=null)S.passSize=Math.max(S.passDrawn||0,S.passSize-gone)}
 function addNewCards(D,list=NEWCARDS){
   list.forEach(([name,color,units,kind,mode,res],k)=>{
     if(Object.values(D.cards).some(c=>c.name===name&&c.color===color&&c.units===units))return;
@@ -579,7 +584,7 @@ function newState(){
   D('Add Card','black',1,'addcard'); D('Retire Card','red',1,'retire'); D('Adjust Numbers','black',1,'adjust'); D('Shuffle','red',1,'shuffle');
   R('Checkerboard','black',10,'paint','check'); R('Polka','red',8,'paint','dots'); R('Scatter Window','black',7,'paint','scatter');
   R('Mono Window','red',6,'paint','mono'); R('Big Void','red',14,'void'); R('Great Settlement','black',16,'paint','city');
-  const st={v:1,seq:0,panels:{},deck:{draw:shuffle(draw),discard:[],retired:[],reserve:shuffle(reserve),cards},log:[],cur:null,last:null,lost:0,cardsV3:true,cardsV4:true,cardsV5:true,cardsV6:true,scarV2:true,tides:[],climate:[],cardsV7:true,cardsV8:true,cardsV9:true,cardsV10:true,cardsV11:true,rifts:[],events:[],notes:{},realmCaps:[],passes:0,passMarks:[],ages:[[0,0]],ageAtPass:0,world:{id:'home',name:'Home world'},seed:Math.random().toString(36).slice(2,10)};
+  const st={v:1,seq:0,panels:{},deck:{draw:shuffle(draw),discard:[],retired:[],reserve:shuffle(reserve),cards},log:[],cur:null,last:null,lost:0,cardsV3:true,cardsV4:true,cardsV5:true,cardsV6:true,scarV2:true,tides:[],climate:[],cardsV7:true,cardsV8:true,cardsV9:true,cardsV10:true,cardsV11:true,cardsV12:true,rifts:[],events:[],notes:{},realmCaps:[],passes:0,passMarks:[],ages:[[0,0]],ageAtPass:0,world:{id:'home',name:'Home world'},seed:Math.random().toString(36).slice(2,10)};
   addNewCards(st.deck);addNewCards(st.deck,NEWCARDS2);addNewCards(st.deck,NEWCARDS3);addNewCards(st.deck,NEWCARDS7);addNewCards(st.deck,NEWCARDS8);addNewCards(st.deck,NEWCARDS9);addNewCards(st.deck,NEWCARDS10);addNewCards(st.deck,NEWCARDS11);st.deck.draw=shuffle(st.deck.draw);return st;
 }
 const cardOf=id=>S.deck.cards[id];
@@ -1953,7 +1958,7 @@ async function riftWork(card){
   const after=landmassInfo(seaCells(S.seq)).n;
   const text=`A rift opened across ${store.length} squares and the sea poured in.${after>before?` One landmass became ${after-before+1}.`:' The land stayed joined, but a deep gulf cut into it.'}${lost?` ${fmt(lost)} people were lost.`:''}`;
   finishCard(card,{text,dice})}
-const NEWCARDS10=[['Rift','red',6,'rift','rift'],['Sundering','black',6,'rift','rift']];
+const NEWCARDS10=[['Rift','red',6,'rift','rift'],['Sundering','black',6,'rift','rift',true]];
 /* ---------- more cards: realm cards (treaty, declaration, uprising, coup, alliance) and land cards (canal, dam, inland sea, ice age) ---------- */
 const allied=(a,b)=>(S.allies||[]).some(p=>pk(p[0],p[1])===pk(a,b));
 /* when a war starts, each side's allies join it against the enemy if they share a border with it */
@@ -2088,7 +2093,7 @@ async function landWork(card){
     S.seq++;S.climate=(S.climate||[]).concat([[S.seq,-3,cur.w]]);S.tides=(S.tides||[]).concat([[S.seq,Math.min(tide,nt)]]);mapStep=S.seq;
     return finishCard(card,{text:`Level ${L}. An ice age closes in. The world turns bitterly cold and the sea falls.`,dice})}
   finishCard(card,{text:'Nothing came of it.',dice})}
-const NEWCARDS11=[['Boom','red',5,'event','boom'],['Bust','black',5,'event','bust'],['Trade Fair','red',4,'event','fair'],['Discovery','red',4,'event','discovery'],['Granary','black',4,'event','granary'],['Refugees','black',4,'event','refugees'],['Invention','red',4,'event','invention'],['Wonder','red',6,'event','wonder'],['Great Exhibition','black',6,'event','exhibition'],['Treaty','red',4,'realm','treaty'],['Declaration','black',4,'realm','declare'],['Uprising','black',4,'realm','uprising'],['Coup','red',4,'realm','coup'],['Alliance','red',4,'realm','alliance'],['Canal','red',6,'land','canal'],['Dam','black',6,'land','dam'],['Inland Sea','black',6,'land','inlandsea'],['Ice Age','black',6,'land','iceage']];
+const NEWCARDS11=[['Boom','red',5,'event','boom'],['Bust','black',5,'event','bust'],['Trade Fair','red',4,'event','fair'],['Discovery','red',4,'event','discovery'],['Granary','black',4,'event','granary'],['Refugees','black',4,'event','refugees'],['Invention','red',4,'event','invention'],['Wonder','red',6,'event','wonder'],['Great Exhibition','black',6,'event','exhibition'],['Treaty','red',4,'realm','treaty'],['Declaration','black',4,'realm','declare'],['Uprising','black',4,'realm','uprising'],['Coup','red',4,'realm','coup'],['Alliance','red',4,'realm','alliance'],['Canal','red',6,'land','canal',true],['Dam','black',6,'land','dam'],['Inland Sea','black',6,'land','inlandsea',true],['Ice Age','black',6,'land','iceage']];
 const wonderPop=()=>Math.round((S.wonders||[]).filter(w=>w.seq<=S.seq).length*400*dfx('wonder'));
 /* ---------- ruins: squares of settlement that a void, erosion, disaster or dimension wiped out ---------- */
 let RUIN=null;
@@ -3298,7 +3303,7 @@ async function buildSea(step){
       let r=lo[0]+(hi[0]-lo[0])*t,gg=lo[1]+(hi[1]-lo[1])*t,b=lo[2]+(hi[2]-lo[2])*t,e=1;
       if(cx>0&&!sea[c-1])e=Math.min(e,fx);if(cx<gw-1&&!sea[c+1])e=Math.min(e,1-fx);if(cy>0&&!sea[c-gw])e=Math.min(e,fy);if(cy<gh-1&&!sea[c+gw])e=Math.min(e,1-fy);
       let foam=0;if(e<.3){foam=(1-e/.3);r+=(220-r)*foam*.6;gg+=(238-gg)*foam*.6;b+=(242-b)*foam*.6}
-      D[o]=r;D[o+1]=gg;D[o+2]=b;D[o+3]=fl[c]?255*Math.min(.9,(.5+.14*t+foam*.3)*.72):ink[c]?255*Math.min(.9,(.5+.14*t+foam*.3)*.3):255;
+      D[o]=r;D[o+1]=gg;D[o+2]=b;D[o+3]=255;
     }
   }
   g.putImageData(im,0,0);return SEAL={sig:sc.sig,canvas:cv};
@@ -3435,7 +3440,7 @@ function viewRules(){
   <li><b>Supply:</b> cities need food, fuel (from the Forge Age) and the raw goods their industries use; some villages need food. A place makes do with its own land, or is supplied by a road, river or flight path from a neighbour that makes the good (a railway reaches two stops along). If the route is closed, or the supplier is down or short itself, the place goes short: its output falls and its population shrinks a little more with each change until supply returns. Short places have a red ring on the map.</li>
   <li><b>Continents:</b> the stats count separate landmasses and the share held by the biggest. As the painted map grows past about 8 panels' worth, the sea level rises with it, flooding the lowest ground first, so big landforms tend to break at their low points. The Rift and Sundering cards cut a channel from one coast to a far one and the sea fills it; places on the rift are lost.</li>
   <li><b>Wars and unrest:</b> neighbouring realms build tension along their shared border, faster when one is short of supplies or much bigger than the other, and slower when routes link them. Past a threshold a war can break out on its own. Routes between the realms close, both sides lose people each change, and now and then the stronger side takes a border place. A war ends in peace, with the taken places kept, or in conquest if a realm is down to its capital. A large realm with a rival city, shortages or a losing war can also split in a civil war, and the rival city becomes a new realm. The Realms view draws fronts between fighting realms in red.</li>
-  <li><b>More cards:</b> Boom, Bust, Trade Fair, Discovery, Invention and Exhibition change a settlement's population for a while. Granary shields places from food shortage. Refugees move people from the hungriest place. Wonder adds people for good and names the city. Treaty, Declaration, Alliance, Uprising and Coup act on realms. Canal, Dam and Inland Sea cut water into the biggest landmass, and Ice Age turns the world cold and drops the sea.</li>
+  <li><b>More cards:</b> Boom, Bust, Trade Fair, Discovery, Invention and Exhibition change a settlement's population for a while. Granary shields places from food shortage. Refugees move people from the hungriest place. Wonder adds people for good and names the city. Treaty, Declaration, Alliance, Uprising and Coup act on realms. Canal, Dam and Inland Sea cut water into the biggest landmass (Canal and Inland Sea start in the reserve, as does Sundering, because they split land so hard; add them from the Deck tab if you want them), and Ice Age turns the world cold and drops the sea.</li>
   <li><b>Weather Front:</b> storms, blizzards, heat haze, dust storms, fog and auroras. The Weather die picks one, tilted by the panel's biome and the season, and the Level die sets its strength. It harms no one and passes within a few changes. Storms and blizzards close roads and railways, dust closes roads, and flights are grounded by storms, blizzards, dust and fog. Closed routes show dashed red on the trade lines and in the settlement card. Heat haze makes a wildfire there one level worse, and a storm does the same for a flood. It also changes the flora on the Flora layer, and a settlement's card and inspect readout show whether its output is up or down while the weather lasts.</li>
   <li><b>Rising Tide, Falling Tide:</b> the Level die moves the sea one to three steps.</li>
   <li><b>Cold Snap, Heatwave, Monsoon, Dry Spell:</b> the Level die shifts the climate of the whole map. Turn on Climate in the map controls to see the biomes move.</li></ul>
@@ -4137,6 +4142,7 @@ for(const id of['camIn','libIn'])$(id).addEventListener('change',e=>{const f=e.t
   if(!S.cardsV9){addNewCards(S.deck,NEWCARDS9);S.cardsV9=true;save()}
   if(!S.cardsV10){addNewCards(S.deck,NEWCARDS10);S.cardsV10=true;S.rifts=S.rifts||[];save()}
   if(!S.cardsV11){addNewCards(S.deck,NEWCARDS11);S.cardsV11=true;save()}
+  if(!S.cardsV12){retuneLandCards();S.cardsV12=true;save()}
   S.events=S.events||[];S.notes=S.notes||{};
   if(S.passes==null){const D=S.deck,tot=D.draw.length+D.discard.length+D.retired.length+1;S.passes=Math.floor(Math.max(0,S.log.length-12)/Math.max(10,tot));S.passEst=true;S.passMarks=[];S.ages=[[0,0]];S.ageAtPass=S.passes;S.world={id:'home',name:'Home world'};save()}
   S.climate=S.climate||[];
