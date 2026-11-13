@@ -3360,6 +3360,8 @@ function startPlay(){
   setTimeout(()=>{refreshMapStep();playT=setInterval(()=>{if(mapStep>=S.seq){stopPlay();return}setStep(mapStep+1)},450);refreshMapStep()},0);
 }
 function chip(c,old){return `<span class="chip ${c.color}${old?' old':''}">${NUMKIND.has(c.kind)?`<b>${c.units}</b>`:'<b>·</b>'}${esc(c.name)}</span>`}
+/* a retired card goes back into the draw pile at a random place */
+function restoreCard(id){const D=S.deck,i=D.retired.indexOf(id);if(i<0)return;D.retired.splice(i,1);D.draw.splice(rand(D.draw.length+1),0,id);save();render()}
 function viewDeck(){
   try{unlockWaiting();sweepWaiting()}catch(e){}
   const D=S.deck,inDeck=D.draw.concat(D.discard).map(id=>D.cards[id]).sort((a,b)=>a.name.localeCompare(b.name)||b.units-a.units);
@@ -3368,7 +3370,7 @@ function viewDeck(){
   <div class="counts"><div><b>${D.draw.length}</b><small>Pile</small></div><div><b>${D.discard.length}</b><small>Discard</small></div><div><b>${D.retired.length}</b><small>Retired</small></div><div><b>${D.reserve.length}</b><small>Reserve</small></div></div>
   <h2>In the deck</h2><div class="chips">${inDeck.map(c=>chip(c)).join('')}</div>
   ${(D.waiting||[]).length?`<h2>Waiting</h2><p class="hint" style="text-align:left">${(D.waiting||[]).map(id=>`${esc(D.cards[id].name)} (${esc(waitWhy(D.cards[id]))})`).join(', ')}. They join the deck, shuffled in, once their condition is met.</p>`:''}
-  <h2>Retired rules</h2>${D.retired.length?`<div class="chips">${D.retired.map(id=>chip(D.cards[id],true)).join('')}</div>`:'<p class="hint" style="text-align:left">None yet. Retired instructions are kept here in case you want them back.</p>'}
+  <h2>Retired rules</h2>${D.retired.length?`<div class="chips">${D.retired.map(id=>chip(D.cards[id],true)).join('')}</div><div class="optlist">${D.retired.map(id=>`<button class="btn" data-act="restore" data-id="${esc(id)}">Restore ${esc(D.cards[id].name)}</button>`).join('')}</div>`:'<p class="hint" style="text-align:left">None yet. Retired instructions are kept here in case you want them back.</p>'}
   <h2>Reserve</h2><p class="hint" style="text-align:left">${D.reserve.length} cards wait outside the deck. Add Card brings one in without telling you which.</p>
   <div class="danger">${resetArm?`<button class="btn" data-act="resetgo" style="border-color:var(--red);color:var(--red)">Erase this map for good</button><button class="btn" data-act="resetno">Keep it</button>`:`<button class="btn" data-act="resetask">Erase this map and start over</button>`}</div>`;
 }
@@ -3842,6 +3844,7 @@ document.addEventListener('click',e=>{
   switch(act){
     case 'draw':drawCard();break; case 'roll':roll();break; case 'place':place();break; case 'fizzle':fizzle();break;
     case 'deckwork':deckWork();break;
+    case 'restore':restoreCard(a.dataset.id);break;
     case 'play':if(tab==='options'){tab='map';mapStep=0;histBar=true;render();startPlay()}else playT?stopPlay():startPlay();break;
     case 'now':stopPlay();histBar=false;mapStep=S.seq;render();break;
     case 'blank':showBlank=!showBlank;kvSet('blankterr',showBlank?'1':'0');render();break;
