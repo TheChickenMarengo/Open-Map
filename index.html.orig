@@ -192,6 +192,7 @@ svg.chart{width:100%;height:auto;background:var(--sheet);border:1px solid var(--
 .cdot.village{width:7px;height:7px;border-width:1.5px;border-radius:1px}
 .cdot.hamlet{width:7px;height:7px;border:1.5px solid #f1ece0;background:#0e1013;box-shadow:0 0 0 1.5px #0e1013}
 .cdot.hamlet.on{background:#e7c34a;border-color:#0e1013}
+.cdot[data-f]{box-shadow:0 0 0 2px var(--fc),0 0 0 3px rgba(14,16,19,.8)}
 .cdot.on{background:#e7c34a;box-shadow:0 0 0 2px #e7c34a}
 .cdot.short{box-shadow:0 0 0 2px #c0392b}
 .cdot.short.on{box-shadow:0 0 0 2px #e7c34a,0 0 0 4px #c0392b}
@@ -609,7 +610,7 @@ function saveSettings(){const o={contours:showContours,labels:showLabels,water:s
 function clearCaches(){for(const k in HCACHE)delete HCACHE[k];for(const k in CCACHE)delete CCACHE[k];for(const k in INKC)delete INKC[k];FLD=null;HYD=null;WATR=null;ROCK=null;IND=null;FLORA=null;FLR=null;CLM=null;CLR=null;FFN=null;SEL=null;LBS=null;TRD=null;RLM=null;RLMC=null;WARC=null;SCLC=null;RUIN=null;TERR=null;CONT=null;SEAC=null;SEAL=null;SCARC=null;SUPC=null}
 const emptyMeta=()=>({f:Array(N).fill(0),t:Array(N).fill(0),w:Array(N).fill(0),d:Array(N).fill(0)});
 function settleCounts(){const n={city:0,village:0,hamlet:0};for(const l of settleClusters())n[l.kind]++;return n}
-function popTotal(){let p=0;const rd=riftSet();for(const k in S.panels){const t=S.panels[k].t;for(let i=0;i<t.length;i++)if(!rd.size||!rd.has(k+':'+i))p+=POP[t[i]]}return p}
+function popTotal(){let p=0;const rd=riftSet();for(const k in S.panels){const t=S.panels[k].t;for(let i=0;i<t.length;i++)if(!rd.size||!rd.has(k+':'+i))p+=POP[t[i]]}return p+(S.tolPop||0)}
 function sortedPanels(){return Object.values(S.panels).sort((a,b)=>(a.x*a.x*64+a.y*a.y*100)-(b.x*b.x*64+b.y*b.y*100)||a.versions[0].seq-b.versions[0].seq)}
 
 /* ---------- card text ---------- */
@@ -620,11 +621,11 @@ function ruleText(c){
     case 'paint':return `Cover ${c.units} squares ${dir}. ${MODEDESC[c.mode]}${/^Overflow/.test(c.name)?' The edit always tries to spill.':''}${c.name==='Echo'?' Your photo gets the same edit as last time.':''}${POOLS[c.name]?` The darkroom draws only from: ${POOLS[c.name].map(i=>EDITS[i-1].n).join(', ')}.`:''}${c.name==='Plain Window'?' No darkroom: your photo goes in exactly as taken.':''} On a panel with paint, a Grow roll of 1 to 4 starts new squares beside it.`;
     case 'newpanel':return c.seed?'Place the first panel. Cover 12 squares with your first photo.':`Open a new panel ${placeMode()==='drift'?'on a free edge spot near the middle of the map (the die picks)':'at the edge nearest the centre'}, then cover ${c.units} squares ${dir}.`;
     case 'wall':return `Wall ${c.units} painted squares ${dir}. Walled squares resist voids, dimensions and new paint.`;
-    case 'void':return `A void opens on ${c.units} painted squares and spreads. People inside are lost. Walls hold.`;
+    case 'void':return `A void opens on ${c.units} painted squares and spreads. People inside are lost. Walls hold, and so does the ground near a holy shrine, until nothing else is left.`;
     case 'dimension':return 'Push one panel to its next dimension. Walled squares are untouched.';
     case 'link':return c.mode==='air'?'Draw a dotted flight path between two settlements. It ignores terrain and links distant cities.':c.mode==='rail'?'Lay a railway between two settlements. The dice pick which.':'Build a road between two settlements. The dice pick which.';
     case 'rewind':return 'One panel goes back to how it looked a generation ago, once.';
-    case 'erode':return `Erode ${c.units} painted squares ${dir}. They fade back to blank and the people there are lost. Walls hold.`;
+    case 'erode':return `Erode ${c.units} painted squares ${dir}. They fade back to blank and the people there are lost. Walls hold, and the ground near a holy shrine is the last to go.`;
     case 'mirror':return 'Flip one panel left to right. Everything on it turns with it, walls included.';
     case 'addcard':return 'Bring one card in from the reserve. You will not know which.';
     case 'retire':return 'One card leaves the deck for good. Its rule is kept on the list.';
@@ -726,9 +727,10 @@ function pickPaint(meta,card,sd,grow){
   for(const T of tiers)for(const i of ord){if(out.length>=card.units)break;if(!meta.w[i]&&T(i)&&!seen.has(i)){out.push(i);seen.add(i)}}
   return out;
 }
-function pickWall(meta,card,sd){return orderedCells(sd,card.color==='red').filter(i=>meta.f[i]===1&&!meta.w[i]).slice(0,card.units)}
-function pickVoid(meta,card,sd){
-  const el=i=>meta.f[i]===1&&!meta.w[i], ord=orderedCells(sd,false).filter(el);
+function pickWall(meta,card,sd,skip){const base=orderedCells(sd,card.color==='red').filter(i=>meta.f[i]===1&&!meta.w[i]);if(skip)return base.filter(i=>!skip.has(i)).concat(base.filter(i=>skip.has(i))).slice(0,card.units);return base.slice(0,card.units)}
+function pickVoid(meta,card,sd,skip){
+  const el0=i=>meta.f[i]===1&&!meta.w[i];let el=skip?(i=>el0(i)&&!skip.has(i)):el0,ord=orderedCells(sd,false).filter(el);
+  if(!ord.length&&el!==el0){el=el0;ord=orderedCells(sd,false).filter(el)}
   if(!ord.length)return[];
   const set=[ord[0]], inSet=new Set(set), max=Math.min(card.units,ord.length);
   while(set.length<max){
@@ -1273,7 +1275,7 @@ async function roll(){
       if((c.dtype==='fire'&&activeWeatherOn(meta,[12]))||(c.dtype==='flood'&&activeWeatherOn(meta,[10]))){if(c.lvl<6){c.lvl++;c.note=c.dtype==='fire'?'Heat haze here: +1 level':'Storm rain here: +1 level'}}
       c.cells=await pickDisaster(meta,card,s,c.dtype);
       if(!c.cells.length)c.fizzle='The disaster finds nothing to strike.';
-    }else c.cells=K==='void'?pickVoid(meta,card,s):(K==='wall'||K==='erode')?pickWall(meta,card,s):pickPaint(meta,card,s,grow);
+    }else c.cells=K==='void'?pickVoid(meta,card,s,sacredIdx(c.target)):(K==='wall'||K==='erode')?pickWall(meta,card,s,K==='erode'?sacredIdx(c.target):null):pickPaint(meta,card,s,grow);
   }
   if(PHOTOKIND.has(K)){
     let pool=promptPool(card);const nb=pool.length;
@@ -1317,7 +1319,7 @@ function finishCard(card,extra){
   {const n0=S.log.length;try{tickScience();if(card.name==='Great Calamity')forgetOne('the Great Calamity')}catch(e){console.warn('science',e)}
    save(S.log.length>n0?{logs:Array.from({length:S.log.length-n0},(_,i)=>n0+i+1)}:undefined)}
   render();
-  tickSupply().then(async ch=>{let c2=false;const n0=S.log.length;try{c2=await tickWar()}catch(e){console.warn('war',e)}
+  tickSupply().then(async ch=>{let c2=false;const n0=S.log.length;try{if(tickFaith())c2=true}catch(e){console.warn('faith',e)}try{if(await tickWar())c2=true}catch(e){console.warn('war',e)}
     const added=S.log.length>n0;if(ch||c2||added){save(added?{logs:Array.from({length:S.log.length-n0},(_,i)=>n0+i+1)}:undefined);render()}}).catch(e=>console.warn('supply',e));
 }
 /* Photos show at once from local data; the cloud upload runs in the background and swaps the id in when done. */
@@ -1972,6 +1974,80 @@ async function tickSupply(){
   for(const cl of ALLCL){const nm=plainName(cl),sh=(m.get(nm)||[]).some(x=>!x.ok),o=old[nm],s0=o?o.s:0,s=sh?Math.min(12,s0+1):Math.max(0,s0-1);
     if(s>0){const pop=popOfCl(cl);nw[nm]={s,q:S.seq,d:Math.round(pop*Math.min(.5,.05*s))}}}
   S.sup=nw;return true}
+/* ---------- faiths: each settlement follows one; faiths spread along routes, gather round wonders, split, and shelter the ground near their shrines ---------- */
+const FAITH_COL=['#e07a5f','#81b29a','#f2cc8f','#7b9acc','#c77dba','#9bc53d','#f4a259','#5bc0be'];
+const FA_A=['Ael','Bar','Cor','Dun','Eth','Fen','Gor','Hal','Ili','Jor','Kae','Lun','Mor','Nai','Oru','Pel','Rav','Sol','Tam','Uld','Vor','Wyn','Yel','Zar'],FA_B=['a','ei','un','oth','el','ire','and'];
+const MAX_FAITHS=8;
+function faithName(h){const stem=FA_A[h%FA_A.length]+FA_B[(h>>>5)%FA_B.length],f=(h>>>9)%4;return f===0?`The ${stem} Way`:f===1?`Children of ${stem}`:f===2?`The ${stem} Rite`:`The Faith of ${stem}`}
+let FMC=null;
+function faithMap(step){
+  if(step===undefined)step=S.seq;const L=S.faithLog||[];
+  if(FMC&&FMC.S===S&&FMC.n===L.length&&FMC.step===step)return FMC.m;
+  const m=new Map();for(const e of L)if(e.seq<=step)m.set(e.n,e.f);FMC={S,n:L.length,step,m};return m}
+const faithOf=f=>(S.faiths||[]).find(x=>x.id===f);
+const shrinesOf=(nm,step)=>(S.wonders||[]).filter(w=>w.n===nm&&w.seq<=(step===undefined?S.seq:step)).length;
+const tolMult=()=>1+Math.min(.3,.03*(S.tolerant||[]).length);
+function tickFaith(){
+  if(S.faithSeq===S.seq)return false;S.faithSeq=S.seq;
+  S.faiths=S.faiths||[];S.faithLog=S.faithLog||[];S.shrined=S.shrined||[];
+  const cls=ALLCL=settleClusters();if(!cls.length)return false;
+  const names=cls.map(plainName),byName=new Map(cls.map(c=>[plainName(c),c])),wg=weatherGrid(S.seq),E=supEdges(wg);
+  const fm=new Map(faithMap());for(const k of [...fm.keys()])if(!byName.has(k))fm.delete(k);
+  const open=nm=>reachOf(nm,E).filter(r=>!r.blk&&byName.has(plainName(r.o))).map(r=>plainName(r.o));
+  const sc=nm=>{const c=byName.get(nm);return c?popOfCl(c)/400+4*shrinesOf(nm):0};
+  let ch=false;const conv=(nm,f,note)=>{S.faithLog.push({seq:S.seq,n:nm,f});fm.set(nm,f);ch=true;if(note)noteLog('faith',note)};
+  const living=()=>new Set(fm.values()).size;
+  const found=(nm,from)=>{const h=hash(SD()+'faith'+S.faiths.length+nm),f={id:S.faiths.length?Math.max(...S.faiths.map(x=>x.id))+1:1,name:faithName(h),col:FAITH_COL[S.faiths.length%FAITH_COL.length],seq:S.seq,from:from||null};
+    while(S.faiths.some(x=>x.name===f.name))f.name=faithName(hash(f.name+S.faiths.length));S.faiths.push(f);return f};
+  /* 1 founding: a place with no faith takes one from its neighbours, or gives rise to a new one */
+  for(const nm of names){
+    if(fm.has(nm))continue;
+    const pr=new Map();for(const o of open(nm)){const f=fm.get(o);if(f!=null)pr.set(f,(pr.get(f)||0)+sc(o))}
+    if(pr.size){const f=[...pr.entries()].sort((a,b)=>b[1]-a[1])[0][0];conv(nm,f,null);continue}
+    const first=!S.faiths.length&&nm===names.slice().sort((a,b)=>sc(b)-sc(a)||(a<b?-1:1))[0];
+    if((first||hash(SD()+'ff'+nm+S.seq)%100<20)&&living()<MAX_FAITHS){const f=found(nm);conv(nm,f.id,`${nm} gave rise to a new faith, ${f.name}.`)}
+  }
+  /* 2 shrines: a wonder in a faithful place makes it a holy city */
+  for(const w of S.wonders||[]){if(w.seq>S.seq||S.shrined.includes(w.n+w.wn))continue;const f=fm.get(w.n);if(f==null)continue;
+    S.shrined.push(w.n+w.wn);noteLog('faith',`The ${w.wn} at ${w.n} became a shrine of ${faithOf(f).name}.`);ch=true}
+  /* 3 spread along open routes: the stronger the sender and the weaker the receiver, the likelier a place turns */
+  const snap=new Map(fm),moves=[];
+  for(const nm of names){
+    const mine=snap.get(nm);if(mine==null)continue;const pr=new Map();
+    for(const o of open(nm)){const f=snap.get(o);if(f!=null&&f!==mine)pr.set(f,(pr.get(f)||0)+sc(o))}
+    if(!pr.size)continue;const [f,p]=[...pr.entries()].sort((a,b)=>b[1]-a[1])[0];
+    const mf=faithOf(mine),prob=.10*p/(p+sc(nm)*1.5*(shrinesOf(nm)?2.5:1))*(mf&&S.seq-mf.seq<25?.25:1);
+    if(hash(SD()+'fs'+nm+S.seq)%1000/1000<prob)moves.push([nm,f])}
+  for(const [nm,f] of moves){const c=byName.get(nm);conv(nm,f,c.kind==='city'?`${nm} turned to ${faithOf(f).name}.`:null)}
+  /* 4 schism: a big faith can split, and a far-off group starts its own */
+  {const by=new Map();for(const [nm,f] of fm)(by.get(f)||by.set(f,[]).get(f)).push(nm);
+   for(const [f,list] of by){
+     if(list.length<5||living()>=MAX_FAITHS||hash(SD()+'sch'+f+S.seq)%1000>=30)continue;
+     const hc=list.find(n=>shrinesOf(n))||list.slice().sort((a,b)=>sc(b)-sc(a))[0],H=byName.get(hc);
+     const far=list.slice().sort((a,b)=>Math.hypot(byName.get(b).ac-H.ac,byName.get(b).ar-H.ar)-Math.hypot(byName.get(a).ac-H.ac,byName.get(a).ar-H.ar))[0];
+     const grp=[far,...open(far).filter(o=>fm.get(o)===f)].slice(0,3),nf=found(far,f);
+     for(const nm of grp)conv(nm,nf.id,null);
+     noteLog('faith',`A schism split ${faithOf(f).name}. ${grp.length>1?far+' and '+(grp.length-1)+' nearby '+(grp.length>2?'places':'place'):far} broke away and follow ${nf.name}.`)}}
+  /* 5 tolerance: a place beside a different faith keeps the peace and gains from it */
+  const tol=names.filter(nm=>{const mine=fm.get(nm);if(mine==null)return false;return open(nm).some(o=>fm.get(o)!=null&&fm.get(o)!==mine)});
+  S.tolerant=tol;S.tolPop=Math.round(tol.reduce((a,nm)=>a+popOfCl(byName.get(nm))*.05,0));
+  return ch}
+/* ground within two squares of a holy city is the last to be voided or eroded: a map from square index to true, for one panel */
+function sacredIdx(key){
+  const p=S.panels[key];if(!p)return null;const cls=ALLCL=settleClusters(),fm=faithMap(),bb=bbox(),out=new Set();
+  for(const cl of cls){const nm=plainName(cl);if(fm.get(nm)==null||!shrinesOf(nm))continue;
+    for(const a of cl.cells)for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const c=a.c+dx,r=a.r+dy;if(c<0||r<0)continue;
+      if(bb.minx+Math.floor(c/COLS)===p.x&&bb.maxy-Math.floor(r/ROWS)===p.y)out.add((r%ROWS)*COLS+(c%COLS))}}
+  return out.size?out:null}
+function faithHTML(){
+  const F=S.faiths||[];if(!F.length)return '';
+  const fm=faithMap(),cls=ALLCL||[],by=new Map();
+  for(const cl of cls){const f=fm.get(plainName(cl));if(f!=null)(by.get(f)||by.set(f,[]).get(f)).push(cl)}
+  const rows=[...by.entries()].sort((a,b)=>b[1].length-a[1].length).map(([f,list])=>{
+    const F0=faithOf(f);if(!F0)return '';const pop=list.reduce((a,c)=>a+popOfCl(c),0),holy=list.filter(c=>shrinesOf(plainName(c))).map(c=>plainName(c)),par=F0.from!=null&&faithOf(F0.from);
+    return `<div class="rc"><b><span style="color:${F0.col}">●</span> ${esc(F0.name)}</b><div class="rm">${list.length} place${list.length>1?'s':''} · pop ${fmt(pop)}${holy.length?` · holy: ${esc(holy.join(', '))}`:''}${par?` · split from ${esc(par.name)}`:''}</div><div class="rm">${esc(list.slice().sort((a,b)=>popOfCl(b)-popOfCl(a)).slice(0,8).map(plainName).join(', '))}${list.length>8?'…':''}</div></div>`}).join('');
+  const tl=(S.tolerant||[]).length;
+  return rows+`<p class="t">Tolerant places: ${tl}${tl?` (+${Math.round((tolMult()-1)*100)}% science, +${fmt(S.tolPop||0)} people)`:''}. A place beside a different faith keeps the peace and gains from it.</p>`}
 /* ---------- continents: landmass count, the sea rising as the map grows, and rifts that split the land ---------- */
 const mirI=i=>((i/COLS)|0)*COLS+(COLS-1-i%COLS);
 /* rifts are stored against a panel's picture (its oid), so they follow it through Swap and Mirror like names do */
@@ -2090,12 +2166,14 @@ async function realmWork(card){
     const joined=callAllies(a,b,border,nm,dur,nw);
     return done(`${nm(a)} declared war on ${nm(b)} (level ${L}). Routes across their border are closed.${joined.length?' '+joined.join(' '):''}`)}
   if(m==='uprising'){
-    for(const r of R.realms.slice().sort((p,q)=>q.pop-p.pop)){const res=await civilSplit(r);if(res)return done(`The people of ${plainName(res.rival)} rose against ${r.name}. ${res.nr.name} broke away and the two are at war.`)}
+    const mix=r=>new Set(ALLCL.filter(c=>c.kind==='city'&&realmOfCl(c)&&realmOfCl(c).cap===r.cap).map(c=>faithMap().get(plainName(c))).filter(f=>f!=null)).size>1;
+    for(const r of R.realms.slice().sort((p,q)=>(mix(q)-mix(p))||q.pop-p.pop)){const res=await civilSplit(r);if(res)return done(`The people of ${plainName(res.rival)} rose against ${r.name}. ${res.nr.name} broke away and the two are at war.`)}
     return stop('No realm has a rival city strong enough to rise.')}
   if(m==='coup'){
     const el=R.realms.filter(r=>ALLCL.filter(c=>c.kind==='city'&&realmOfCl(c)&&realmOfCl(c).cap===r.cap).length>=2);
     if(!el.length)return stop('No realm has a second city to take the court.');
-    const r=el[pick(el.length)],cities=ALLCL.filter(c=>c.kind==='city'&&realmOfCl(c)&&realmOfCl(c).cap===r.cap).sort((p,q)=>popOfCl(q)-popOfCl(p)),capCl=cities.find(c=>plainName(c)===r.cap)||cities[0],nc=plainName(cities.find(c=>c!==capCl)),old=r.cap,oldName=r.name,k=Object.keys(S.coups).find(x=>S.coups[x]===old)||old;
+    const mixed=el.filter(r=>new Set(ALLCL.filter(c=>c.kind==='city'&&realmOfCl(c)&&realmOfCl(c).cap===r.cap).map(c=>faithMap().get(plainName(c))).filter(f=>f!=null)).size>1),pool=mixed.length&&pick(10)<7?mixed:el;
+    const r=pool[pick(pool.length)],cities=ALLCL.filter(c=>c.kind==='city'&&realmOfCl(c)&&realmOfCl(c).cap===r.cap).sort((p,q)=>popOfCl(q)-popOfCl(p)),capCl=cities.find(c=>plainName(c)===r.cap)||cities[0],nc=plainName(cities.find(c=>c!==capCl)),old=r.cap,oldName=r.name,k=Object.keys(S.coups).find(x=>S.coups[x]===old)||old;
     S.coups[k]=nc;renameCap(old,nc);RLM=null;const R2=await realmMap(S.seq),nr=R2.realms.find(x=>x.cap===nc);
     if(!nr){S.coups[k]=old;if(k===old)delete S.coups[k];renameCap(nc,old);RLM=null;return stop('The plotters failed and the court stayed where it was.')}
     return done(`A coup in ${oldName} (level ${L}). The court moved to ${nc}, and the realm is now ${nr.name}.`)}
@@ -2315,7 +2393,7 @@ const isNote=l=>!!(l.note||l.kind==='war');
 const nDraws=()=>S.log.reduce((n,l)=>n+(isNote(l)?0:1),0);
 const logCat=l=>l.cat||(l.kind==='war'?'war':l.kind==='realm'?'realm':'');
 const histAdd=(w,x,p)=>{if(!w)return;(w.hist=w.hist||[]).push(p?{s:S.seq,t:w.tk,x,p}:{s:S.seq,t:w.tk,x});if(w.hist.length>30)w.hist.shift()};
-const noteLog=(cat,text,w,p)=>{S.log.push({date:today(),seq:S.seq,card:({war:'War',sci:'Science'})[cat]||'Realm',color:cat==='war'?'red':'black',units:0,kind:cat==='war'?'war':'realmnote',cat,note:true,text});histAdd(w,text,p)};
+const noteLog=(cat,text,w,p)=>{S.log.push({date:today(),seq:S.seq,card:({war:'War',sci:'Science',faith:'Faith'})[cat]||'Realm',color:cat==='war'?'red':'black',units:0,kind:cat==='war'?'war':'realmnote',cat,note:true,text});histAdd(w,text,p)};
 const warLog=(text,w,p)=>noteLog('war',text,w,p);
 const HOWEND={peace:'ended in peace',treaty:'ended by treaty',conquest:'ended when one realm fell',vanished:'ended when a realm ceased to exist'};
 const capName=cap=>{const r=RLM&&RLM.realms.find(x=>x.cap===cap);return r?r.name:cap};
@@ -2493,7 +2571,7 @@ const discOf=id=>DISC.find(d=>d[0]===id);
 const discAt=step=>sciS().got.filter(g=>g.seq<=step&&!(g.lost!=null&&g.lost<=step));
 const dfx=(k,step=S.seq)=>{let m=1;for(const g of discAt(step)){const d=discOf(g.id);if(d&&d[3][k]!=null)m*=d[3][k]}return m};
 const sciHalved=()=>(S.wars||[]).length>0||supplyPop()<0;
-function sciRate(){const sc=settleCounts();let r=sc.city*1.5+sc.village*.5+(S.wonders||[]).filter(w=>w.seq<=S.seq).length*3;if(sciHalved())r*=.5;return r*dfx('sci')}
+function sciRate(){const sc=settleCounts();let r=sc.city*1.5+sc.village*.5+(S.wonders||[]).filter(w=>w.seq<=S.seq).length*3;if(sciHalved())r*=.5;return r*dfx('sci')*tolMult()}
 const discCount=(ai,step=S.seq)=>discAt(step).filter(g=>{const d=discOf(g.id);return d&&d[2]===ai}).length;
 /* run once per change: science accrues, and a discovery is made when enough has built up */
 function tickScience(){
@@ -2525,7 +2603,7 @@ function sciDetail(){
   const effects=keys.size?[...keys].map(k=>`<p class="t"><b>${esc(LBL[k]||k)}</b> (${sciPct(dfx(k))}): ${esc(fxLine(k))} <span class="rm">From ${esc(srcOf(k))}.</span></p>`).join(''):'<p class="t">No discovery effects are active.</p>';
   const hist=s.got.filter(g=>g.seq<=S.seq).slice().reverse().map(g=>{const d=discOf(g.id),lost=g.lost!=null&&g.lost<=S.seq;return `<div class="rc"><b>${esc(d[1])}</b><div class="rm">${esc(AGES[d[2]].n)} · made at change ${g.seq}${lost?` · forgotten at change ${g.lost}`:''}</div></div>`}).join('');
   const agesH=AGES.map((a,i)=>{const total=DISC.filter(d=>d[2]===i).length;if(!total)return '';const held=discCount(i);return `<p class="t">${esc(a.n)}: ${held} of ${total} made${i===ai?` · ${Math.min(held,PER_AGE_DISC)} of ${PER_AGE_DISC} needed to advance`:''}</p>`}).join('');
-  return `<p class="t"><b>Where the points come from</b></p>`+kv([[`Cities (${sc.city})`,r1(sc.city*1.5)],[`Villages (${sc.village})`,r1(sc.village*.5)],[`Wonders (${won})`,r1(won*3)],['Halved by war or shortage',sciHalved()?'yes':'no'],['Discovery multiplier',sciPct(dfx('sci'))],['Per change',r1(rate)]])+`<p class="t">${esc(eta)}</p>`+
+  return `<p class="t"><b>Where the points come from</b></p>`+kv([[`Cities (${sc.city})`,r1(sc.city*1.5)],[`Villages (${sc.village})`,r1(sc.village*.5)],[`Wonders (${won})`,r1(won*3)],[`Tolerant places (${(S.tolerant||[]).length})`,sciPct(tolMult())],['Halved by war or shortage',sciHalved()?'yes':'no'],['Discovery multiplier',sciPct(dfx('sci'))],['Per change',r1(rate)]])+`<p class="t">${esc(eta)}</p>`+
     `<p class="t"><b>Active effects</b></p>${effects}`+(hist?`<p class="t"><b>Discovery history</b></p>${hist}`:'')+`<p class="t"><b>Ages</b></p>${agesH}`}
 function sciHTML(){
   const s=sciS(),ai=ageAt(S.seq),act=discAt(S.seq),list=DISC.filter(d=>d[2]===ai).length;
@@ -2987,7 +3065,8 @@ const drawCities=()=>drawLayer('cities',buildCities,showCity);
 let LASTDOTS=[];
 /* city: round dot; village: small square; hamlet: hollow ring */
 const FAM_MAN="Frutiger,'Frutiger LT Std','Frutiger Next','Segoe UI','Myriad Pro','Helvetica Neue',Arial,sans-serif",FAM_NAT="Georgia,'Times New Roman',serif",famOf=k=>k==='city'||k==='village'||k==='hamlet'||k==='ruin'?FAM_MAN:k==='sea'||k==='water'||k==='ridge'||k==='region'||k==='realm'?FAM_NAT:'system-ui,Helvetica,Arial,sans-serif';
-function drawDot(g,kind,x,y,F){g.beginPath();
+function drawDot(g,kind,x,y,F,fc){if(fc){g.beginPath();g.arc(x,y,5.4*F,0,7);g.lineWidth=1.6*F;g.strokeStyle=fc;g.stroke()}
+  g.beginPath();
   if(kind==='city')g.arc(x,y,3*F,0,7);else if(kind==='village')g.rect(x-2.2*F,y-2.2*F,4.4*F,4.4*F);else g.arc(x,y,2.4*F,0,7);
   if(kind==='hamlet'){g.fillStyle='#0e1013';g.fill();g.lineWidth=1.5*F;g.strokeStyle='#f1ece0';g.stroke();return}
   g.lineWidth=F;g.strokeStyle='#0e1013';g.fillStyle='#f1ece0';g.fill();g.stroke()}
@@ -2995,7 +3074,7 @@ function drawDot(g,kind,x,y,F){g.beginPath();
 function labelList(){
   const out=[];
   /* settlements: adjacent or near-adjacent towns and cities across panels merge into one named place */
-  ALLCL=settleClusters();for(const c of ALLCL)c.dot=true;out.push(...ALLCL);
+  ALLCL=settleClusters();for(const c of ALLCL)c.dot=true;{const fm=faithMap();for(const c of ALLCL){const f=fm.get(plainName(c)),F0=f!=null&&faithOf(f);c.fc=F0?F0.col:undefined}}out.push(...ALLCL);
   for(const k in S.panels){
     const p=S.panels[k],{minx,maxy}=bbox(),ox=(p.x-minx)*COLS,oy=(maxy-p.y)*ROWS;
     const comp=(test)=>{const seen=new Set(),res=[];for(let i=0;i<N;i++){if(!test(i)||seen.has(i))continue;const q=[i],cells=[];seen.add(i);
@@ -3103,10 +3182,10 @@ function labelsHTML(){
   const {minx,maxx,miny,maxy}=bbox(),gw=(maxx-minx+1)*COLS,gh=(maxy-miny+1)*ROWS,L=labelsOn()?labelList():(LASTDOTS=[],[]);LASTL=LASTDOTS;
   let dots='',sel='';
   LASTL.forEach((l,i)=>{const on=citySel===cityKey(l);
-    dots+=`<button class="cdot ${l.kind}${on?' on':''}${shortOf(l).length?' short':''}" data-act="cdot" data-i="${i}" style="left:${l.c/gw*100}%;top:${l.r/gh*100}%" aria-label="${esc(l.text)}: show how far it extends"></button>`;
+    dots+=`<button class="cdot ${l.kind}${on?' on':''}${shortOf(l).length?' short':''}" data-act="cdot" data-i="${i}" style="left:${l.c/gw*100}%;top:${l.r/gh*100}%${l.fc?';--fc:'+l.fc:''}"${l.fc?' data-f="1"':''} aria-label="${esc(l.text)}: show how far it extends"></button>`;
     if(on){const pop=popOfCl(l);
       sel=l.cells.map(n=>`<i class="cx" style="left:${n.c/gw*100}%;top:${n.r/gh*100}%;width:${100/gw}%;height:${100/gh}%"></i>`).join('')+
-        `<div class="ccard" style="left:${l.c/gw*100}%;top:${l.r/gh*100}%"><b>${esc(l.text)}</b><br>${TIERN[l.tier]} · ${l.cells.length} square${l.cells.length>1?'s':''} · pop ${fmt(pop)}${econHTML(l)}</div>`}});
+        `<div class="ccard" style="left:${l.c/gw*100}%;top:${l.r/gh*100}%"><b>${esc(l.text)}</b><br>${TIERN[l.tier]} · ${l.cells.length} square${l.cells.length>1?'s':''} · pop ${fmt(pop)}${(()=>{const f=faithMap().get(plainName(l)),F0=f!=null&&faithOf(f);return F0?`<br>Faith: <span style="color:${F0.col}">●</span> ${esc(F0.name)}${shrinesOf(plainName(l))?' (holy city)':''}`:''})()}${econHTML(l)}</div>`}});
   if(ins)sel+=`<i class="cx" style="left:${ins.c/gw*100}%;top:${ins.r/gh*100}%;width:${100/gw}%;height:${100/gh}%"></i><div class="ccard insp" style="left:${(ins.c+.5)/gw*100}%;top:${(ins.r+.5)/gh*100}%;transform:translate(${ins.tx}%,${ins.up?'calc(-100% - 14px)':'14px'})">${ins.html}</div>`;
   return `<div class="labwrap"><div class="labels" aria-hidden="true">${L.map(l=>`<span class="lb ${l.kind}" style="left:${l.c/gw*100}%;top:${l.r/gh*100}%;transform:${l.dot?'translate(9px,-50%)':'translate(-50%,-50%)'} rotate(${l.rot}deg)">${esc(l.text)}</span>`).join('')}</div><div class="cext">${sel}${dots}</div></div>`;
 }
@@ -3396,7 +3475,7 @@ async function buildSea(step){
 const LAYERS=[['landbase',buildLandBase,()=>!showPhotos],['sea',buildSea,()=>showSea],['terrain',buildTerrain,()=>true],['climate',buildClimate,()=>climMode>0],['season',buildSeason,()=>showSeason],['water',buildWater,()=>showWater],['rocks',buildRocks,()=>true],['flora',buildFlora,()=>showFlora],['realms',buildRealms,()=>showRealms],['cities',buildCities,()=>showCity],['industry',buildIndustry,()=>showInd],['trade',buildTrade,()=>showTrade],['ice',buildIce,()=>!showRealms],['war',buildWar,()=>true],['scars',buildScars,()=>true]];
 /* one written name on an exported image, at scale F */
 function drawLabel(g,l,F){
-  g.rotate(l.rot*Math.PI/180);if(l.dot){drawDot(g,l.kind,0,0,F);g.translate(9*F,0);g.textAlign='left'}
+  g.rotate(l.rot*Math.PI/180);if(l.dot){drawDot(g,l.kind,0,0,F,l.fc);g.translate(9*F,0);g.textAlign='left'}
   g.font=(l.kind==='city'?`500 ${11*F}px`:l.kind==='sea'?`italic 400 ${7*F}px`:l.kind==='odd'||l.kind==='water'||l.kind==='region'||l.kind==='realm'||l.kind==='ruin'?`italic ${9*F}px`:`${9*F}px`)+' '+famOf(l.kind);
   g.lineWidth=(l.kind==='sea'?1.3:3.5)*F;g.lineJoin='round';g.strokeStyle=l.kind==='sea'?'rgba(8,10,14,.5)':'rgba(8,10,14,.9)';g.fillStyle=l.kind==='odd'?'#c9b6ff':l.kind==='water'||l.kind==='sea'?'#a9d3f5':'rgba(241,236,224,.9)';if(l.kind!=='sea')g.strokeText(l.text,0,0);g.fillText(l.text,0,0)}
 /* ---------- export ---------- */
@@ -3416,7 +3495,7 @@ async function exportMap(){
     g.textAlign='center';g.textBaseline='middle';const cs=pw/COLS;
     const Ls=labelList();
     for(const l of Ls){g.save();g.translate(pad+l.c*cs,pad+l.r*cs);drawLabel(g,l,1);g.restore()}
-    for(const l of LASTDOTS){if(Ls.includes(l))continue;drawDot(g,l.kind,pad+l.c*cs,pad+l.r*cs,1)}
+    for(const l of LASTDOTS){if(Ls.includes(l))continue;drawDot(g,l.kind,pad+l.c*cs,pad+l.r*cs,1,l.fc)}
   }
   g.fillStyle='#8f98a3';g.textAlign='left';g.textBaseline='alphabetic';g.font='14px ui-monospace,Menlo,monospace';
   g.fillText(`Open Map · ${Object.keys(S.panels).length} panels · ${S.seq} changes · ${today()}`,pad,LH-14);
@@ -3524,6 +3603,7 @@ function viewRules(){
   <li><b>Supply:</b> cities need food, fuel (from the Forge Age) and the raw goods their industries use; some villages need food. A place makes do with its own land, or is supplied by a road, river or flight path from a neighbour that makes the good (a railway reaches two stops along). If the route is closed, or the supplier is down or short itself, the place goes short: its output falls and its population shrinks a little more with each change until supply returns. Short places have a red ring on the map.</li>
   <li><b>Continents:</b> the stats count separate landmasses and the share held by the biggest. As the painted map grows past about 8 panels' worth, the sea level rises with it, flooding the lowest ground first, so big landforms tend to break at their low points. The Rift and Sundering cards cut a channel from one coast to a far one and the sea fills it; places on the rift are lost.</li>
   <li><b>Wars and unrest:</b> neighbouring realms build tension along their shared border, faster when one is short of supplies or much bigger than the other, and slower when routes link them. Past a threshold a war can break out on its own. Routes between the realms close, both sides lose people each change, and now and then the stronger side takes a border place. A war ends in peace, with the taken places kept, or in conquest if a realm is down to its capital. A large realm with a rival city, shortages or a losing war can also split in a civil war, and the rival city becomes a new realm. The Realms view draws fronts between fighting realms in red.</li>
+  <li><b>Faiths:</b> every settlement follows one faith. A place with none takes the faith of a neighbour it is joined to by an open route, or sometimes gives rise to a new one. Faiths spread along roads, rivers, railways and flight paths: big places push harder, and a place with a wonder is hard to turn and becomes a holy city, a shrine. A faith with many places can split, and a far-off group breaks away. A place beside a different faith is tolerant: it gains a little population and speeds science. Ground within two squares of a holy city is the last to be voided or eroded. An Uprising or Coup is more likely in a realm of several faiths. Each place's faith shows as a coloured ring on its dot, and in Statistics under Faiths.</li>
   <li><b>More cards:</b> Boom, Bust, Trade Fair, Discovery, Invention and Exhibition change a settlement's population for a while. Granary shields places from food shortage. Refugees move people from the hungriest place. Wonder adds people for good and names the city. Treaty, Declaration, Alliance, Uprising and Coup act on realms. Canal, Dam and Inland Sea cut water into the biggest landmass (Canal and Inland Sea start in the reserve, as does Sundering, because they split land so hard; add them from the Deck tab if you want them), and Ice Age turns the world cold and drops the sea.</li>
   <li><b>Weather Front:</b> storms, blizzards, heat haze, dust storms, fog and auroras. The Weather die picks one, tilted by the panel's biome and the season, and the Level die sets its strength. It harms no one and passes within a few changes. Storms and blizzards close roads and railways, dust closes roads, and flights are grounded by storms, blizzards, dust and fog. Closed routes show dashed red on the trade lines and in the settlement card. Heat haze makes a wildfire there one level worse, and a storm does the same for a flood. It also changes the flora on the Flora layer, and a settlement's card and inspect readout show whether its output is up or down while the weather lasts.</li>
   <li><b>Rising Tide, Falling Tide:</b> the Level die moves the sea one to three steps.</li>
@@ -3694,16 +3774,16 @@ function storyLine(l,n){
 let chFil='all';
 function viewLog(){
   if(!S.log.length)return `<p class="empty">The chronicle fills as you draw.</p>`;
-  const cnt={all:S.log.length,war:0,realm:0,sci:0,card:0};for(const l of S.log){const c=logCat(l);if(c==='war')cnt.war++;else if(c==='realm')cnt.realm++;else if(c==='sci')cnt.sci++;if(!isNote(l))cnt.card++}
-  if(!cnt.war&&!cnt.realm&&!cnt.sci)chFil='all';else if(chFil!=='all'&&!cnt[chFil])chFil='all';
-  let day='',h=cnt.war||cnt.realm||cnt.sci?`<div class="fils" role="group" aria-label="Filter the chronicle">${[['all','All'],['war','Wars'],['realm','Realms'],['sci','Science'],['card','Draws']].filter(([k])=>cnt[k]).map(([k,t])=>`<button class="btn fil" data-act="cfil" data-f="${k}" aria-pressed="${chFil===k}">${t} ${cnt[k]}</button>`).join('')}</div>`:'';
+  const cnt={all:S.log.length,war:0,realm:0,sci:0,faith:0,card:0};for(const l of S.log){const c=logCat(l);if(c==='war')cnt.war++;else if(c==='realm')cnt.realm++;else if(c==='sci')cnt.sci++;else if(c==='faith')cnt.faith++;if(!isNote(l))cnt.card++}
+  if(!cnt.war&&!cnt.realm&&!cnt.sci&&!cnt.faith)chFil='all';else if(chFil!=='all'&&!cnt[chFil])chFil='all';
+  let day='',h=cnt.war||cnt.realm||cnt.sci||cnt.faith?`<div class="fils" role="group" aria-label="Filter the chronicle">${[['all','All'],['war','Wars'],['realm','Realms'],['sci','Science'],['faith','Faiths'],['card','Draws']].filter(([k])=>cnt[k]).map(([k,t])=>`<button class="btn fil" data-act="cfil" data-f="${k}" aria-pressed="${chFil===k}">${t} ${cnt[k]}</button>`).join('')}</div>`:'';
   h+='<div class="chron">';let shown=0;
   S.log.map((l,i)=>({l,n:i+1})).reverse().forEach(({l,n})=>{
     const note=isNote(l);
     if(chFil==='card'?note:chFil!=='all'&&logCat(l)!==chFil)return;shown++;
     if(l.date!==day){day=l.date;h+=`<div class="day">${niceDate(l.date)}</div>`}
     const dice=l.dice&&l.dice.length?' · '+l.dice.map(d=>d.v).join(' '):'',tg=note?'div':'button',at=note?'':` data-act="chron" data-n="${n}"`;
-    h+=`<${tg} class="ch"${at}>${l.img&&IMG[l.img]?`<img alt="" src="${IMG[l.img]}">`:note?`<div class="ph ic ${l.color}">${logCat(l)==='war'?'⚔':logCat(l)==='sci'?'✦':'◆'}</div>`:'<div class="ph"></div>'}<div><div class="s">${esc(storyLine(l,n))}</div><div class="n">${note?'':`#${n} · `}<span class="${l.color}">${esc(l.card)}${NUMKIND.has(l.kind)?' '+l.units:''}</span>${dice}</div></div></${tg}>`});
+    h+=`<${tg} class="ch"${at}>${l.img&&IMG[l.img]?`<img alt="" src="${IMG[l.img]}">`:note?`<div class="ph ic ${l.color}">${logCat(l)==='war'?'⚔':logCat(l)==='sci'?'✦':logCat(l)==='faith'?'☼':'◆'}</div>`:'<div class="ph"></div>'}<div><div class="s">${esc(storyLine(l,n))}</div><div class="n">${note?'':`#${n} · `}<span class="${l.color}">${esc(l.card)}${NUMKIND.has(l.kind)?' '+l.units:''}</span>${dice}</div></div></${tg}>`});
   if(!shown)h+='<p class="empty">Nothing here yet.</p>';
   return h+'</div>';
 }
@@ -3826,7 +3906,7 @@ async function fillStats(){
   const supHTML=kv(parts)+`<p class="t">${shortC.length?`${shortC.length} of ${ALLCL.length} places are short of something.`:'Every place has what it needs.'}</p>`+(shortC.length?bars(rows(need),'#d9a44a'):'')+(hup||hdn?`<p class="t">Output this change: ${hup} up, ${hdn} down.</p>`:'');
   /* events */
   const act=activeEvents(S.seq),actHTML=act.length?act.map(e=>{const hs=(e.hits||[]).slice(0,3).map(h=>h.n).join(', ');return `<div class="rc"><b>${esc(EVNAME[e.type]||e.type)}</b><div class="rm">${hs?esc(hs)+' · ':''}${e.life-(S.seq-e.seq)} change${e.life-(S.seq-e.seq)===1?'':'s'} left</div></div>`}).join(''):'<p class="t">Nothing in effect.</p>';
-  const wonders=(S.wonders||[]).filter(w=>w.seq<=S.seq).map(w=>`<div class="rc"><b>The ${esc(w.wn)}</b><div class="rm">${esc(w.n)}</div></div>`).join('');
+  const wonders=(S.wonders||[]).filter(w=>w.seq<=S.seq).map(w=>`<div class="rc"><b>The ${esc(w.wn)}</b><div class="rm">${esc(w.n)}${(()=>{const f=faithMap().get(w.n),F0=f!=null&&faithOf(f);return F0?' · shrine of '+esc(F0.name):''})()}</div></div>`).join('');
   el.innerHTML=`<h2>Statistics</h2>
   <div class="statgrid"><div><b>${ps.length}</b><span>panels</span></div><div><b>${steps}</b><span>changes</span></div><div><b>${nDraws()}</b><span>draws</span></div>
   <div><b>${fmt(painted)}</b><span>painted</span></div><div><b>${fmt(popNow())}</b><span>population</span></div><div><b>${fmt(S.lost)}</b><span>people lost</span></div>
@@ -3838,7 +3918,7 @@ async function fillStats(){
   ${sec('Painted squares over time',chart(2,'#5b9bea','Painted squares'),false)}
   ${realmBlock}${warBlock}
   ${sec('Supply',supHTML)}
-  ${sec('Active events',actHTML)}${sec('Wonders',wonders)}
+  ${sec('Active events',actHTML)}${sec('Wonders',wonders)}${sec('Faiths',faithHTML())}
   ${sec('Age',ageBlock)}
   ${sec('Biomes',bars(biomes),false)}
   ${sec('Disasters',bars(rows(dis),'#e5594b'),false)}${sec('Weather',bars(rows(wx),'#9bb7d6'),false)}
@@ -4095,7 +4175,7 @@ async function panelBlob(key,v,withLayers){
     for(const l of r.labs){const px=(l.x/r.lw*Wp-(p.x-minx))*w,py=(l.y/r.lh*Hp-(maxy-p.y))*h;if(px<0||py<0||px>w||py>h)continue;g.save();g.translate(px,py);g.rotate(l.a);g.fillStyle='rgba(244,164,132,.85)';g.fillText(l.t,0,0);g.restore()}}
   if(labelsOn()){const cs=w/COLS,c0=(p.x-minx)*COLS,r0=(maxy-p.y)*ROWS;
     const Ls=labelList();
-    for(const l of LASTDOTS){if(Ls.includes(l))continue;const px=(l.c-c0)*cs,py=(l.r-r0)*cs;if(px<0||py<0||px>w||py>h)continue;drawDot(g,l.kind,px,py,F)}
+    for(const l of LASTDOTS){if(Ls.includes(l))continue;const px=(l.c-c0)*cs,py=(l.r-r0)*cs;if(px<0||py<0||px>w||py>h)continue;drawDot(g,l.kind,px,py,F,l.fc)}
     for(const l of Ls){const px=(l.c-c0)*cs,py=(l.r-r0)*cs;if(px<0||py<0||px>w||py>h)continue;
       g.save();g.translate(px,py);drawLabel(g,l,F);g.restore()}}
   return await new Promise((ok,no)=>cv.toBlob(b=>b?ok(b):no(new Error('blob')),'image/png'));
