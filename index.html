@@ -1474,6 +1474,7 @@ function viewOptions(){
       <button class="btn" data-tab="key">Map key</button>
       <button class="btn" data-tab="prompts">All photo prompts</button>
       <button class="btn" data-tab="rules">Rules</button>
+      <button class="btn" data-tab="guide">Card guide</button>
       <button class="btn" data-tab="cards">Deck information</button>
     </div></div>`;
 }
@@ -3364,6 +3365,25 @@ function viewDeck(){
   <h2>Reserve</h2><p class="hint" style="text-align:left">${D.reserve.length} cards wait outside the deck. Add Card brings one in without telling you which.</p>
   <div class="danger">${resetArm?`<button class="btn" data-act="resetgo" style="border-color:var(--red);color:var(--red)">Erase this map for good</button><button class="btn" data-act="resetno">Keep it</button>`:`<button class="btn" data-act="resetask">Erase this map and start over</button>`}</div>`;
 }
+/* card guide: what each kind of card does, generated from the same rule text the card itself shows */
+const GUIDE_NAMES={boom:'Boom',bust:'Bust',fair:'Trade fair',discovery:'Discovery',granary:'Granary',refugees:'Refugees',invention:'Invention',wonder:'Wonder',exhibition:'Great exhibition',outbreak:'Outbreak',famine:'Famine',migration:'Migration',festival:'Festival',dispute:'Border dispute',treaty:'Treaty',declare:'Declaration',uprising:'Uprising',coup:'Coup',alliance:'Alliance',canal:'Canal',dam:'Dam',inlandsea:'Inland sea',iceage:'Ice age',rift:'Rift',up:'Rising tide',down:'Falling tide',cold:'Cold snap',warm:'Heatwave',wet:'Monsoon',dry:'Dry spell',road:'Road',rail:'Railway',air:'Flight',fire:'Wildfire',flood:'Flood',quake:'Earthquake',volcano:'Eruption',meteor:'Meteor strike',plague:'Plague',slide:'Landslide',drought:'Drought',tsunami:'Tsunami',any:'Great calamity',weather:'Weather front'};
+const GUIDE_GROUPS=[
+  ['Events',[['event','boom'],['event','bust'],['event','fair'],['event','discovery'],['event','granary'],['event','refugees'],['event','invention'],['event','wonder'],['event','exhibition'],['event','outbreak'],['event','famine'],['event','migration'],['event','festival'],['event','dispute']]],
+  ['Realms',[['realm','treaty'],['realm','declare'],['realm','uprising'],['realm','coup'],['realm','alliance']]],
+  ['Land, sea and rivers',[['land','canal'],['land','dam'],['land','inlandsea'],['land','iceage'],['rift','rift'],['tide','up'],['tide','down']]],
+  ['Climate',[['climate','cold'],['climate','warm'],['climate','wet'],['climate','dry']]],
+  ['Disasters',[['disaster','fire'],['disaster','flood'],['disaster','quake'],['disaster','volcano'],['disaster','meteor'],['disaster','plague'],['disaster','slide'],['disaster','drought'],['disaster','tsunami'],['disaster','any'],['disaster','weather']]],
+  ['Links',[['link','road'],['link','rail'],['link','air']]],
+  ['Other cards',[['wall',''],['void',''],['erode',''],['newpanel',''],['dimension',''],['rewind',''],['mirror',''],['retire',''],['addcard',''],['adjust',''],['shuffle','']]]
+];
+function cardGuideHTML(){
+  const OTHER={wall:'Wall',void:'Void',erode:'Erosion',newpanel:'New panel',dimension:'Dimension',rewind:'Rewind',mirror:'Mirror',retire:'Retire',addcard:'Add card',adjust:'Adjust',shuffle:'Shuffle'};
+  return `<p class="hint" style="text-align:left">N is the number printed on the card.</p>`+GUIDE_GROUPS.map(([title,list])=>`<h2>${esc(title)}</h2>`+list.map(([kind,mode])=>{
+    let text='';try{text=ruleText({kind,mode:mode||undefined,units:'N',color:'black',name:'',seed:false})}catch(e){}
+    const name=mode?GUIDE_NAMES[mode]||mode:OTHER[kind]||kind;
+    return `<div class="rc"><b>${esc(name)}</b><div class="rm">${esc(text)}</div></div>`}).join('')).join('');
+}
+function viewGuide(){return `<div class="rules">${cardGuideHTML()}</div>`}
 function viewRules(){
   const edits=EDITS.map(e=>e.n).join(', ');
   return `<div class="rules">
@@ -3614,12 +3634,12 @@ function render(){
   const where=cloud.mode==='cloud'?(cloud.fail?'save failed':'saved to account'):cloud.loadFail?'map not loaded':persist?'this device only':'not saving';
   $('sub').textContent=`${nDraws()} draws · ${Object.keys(S.panels).length} panels · ${where}`;
   const sc=settleCounts();$('stats').innerHTML=`cities <b>${sc.city}</b><br>villages <b>${sc.village}</b><br>hamlets <b>${sc.hamlet}</b><br>pop <b>${fmt(popNow())}</b><br>lost <b>${fmt(lost)}</b>${lmLine()}${(S.wars||[]).length?`<br>wars <b>${S.wars.length}</b>`:''}${(()=>{const n=shortCount();return n?`<br>short of supplies <b>${n}</b>`:''})()}<br>${AGES[ageAt(S.seq)].n.replace(' Age','')} age`;
-  const navT=['rules','cards','key','prompts','stats'].includes(tab)?'options':tab;
+  const navT=['rules','cards','key','prompts','stats','guide'].includes(tab)?'options':tab;
   document.querySelectorAll('#nav button').forEach(b=>b.setAttribute('aria-current',b.dataset.tab===navT?'true':'false'));
   const m=$('main'),mb=document.querySelector('.mapbox'),sy=mb?[mb.scrollTop,mb.scrollLeft]:null;
   const back=`<button class="btn backbtn" data-tab="options">← Options</button>`;
   m.className=tab==='map'&&Object.keys(S.panels).length&&!OPEN?'full':'';
-  m.innerHTML=tab==='map'?viewMap():tab==='draw'?`<div class="drawzone first">${viewDraw()}</div>`:tab==='options'?viewOptions():tab==='cards'?back+viewDeck():tab==='key'?back+viewKey():tab==='stats'?back+viewStats():tab==='prompts'?back+viewPrompts():tab==='rules'?back+viewRules():viewLog();
+  m.innerHTML=tab==='map'?viewMap():tab==='draw'?`<div class="drawzone first">${viewDraw()}</div>`:tab==='options'?viewOptions():tab==='cards'?back+viewDeck():tab==='key'?back+viewKey():tab==='stats'?back+viewStats():tab==='prompts'?back+viewPrompts():tab==='rules'?back+viewRules():tab==='guide'?back+viewGuide():viewLog();
   if(S.cur&&S.cur.fresh){S.cur.fresh=false}
   const rolledNow=rollNext;rollNext=false;dealNext=false;
   const nb=document.querySelector('.mapbox');if(nb&&sy){nb.scrollTop=sy[0];nb.scrollLeft=sy[1]}
@@ -3724,6 +3744,7 @@ async function fillStats(){
   ${sec('Disasters',bars(rows(dis),'#e5594b'),false)}${sec('Weather',bars(rows(wx),'#9bb7d6'),false)}
   ${sec('Past events',evBlock,false)}
   ${sec('Ruins and notes',ruinBlock,false)}
+  ${sec('Card effects',cardGuideHTML(),false)}
   ${sec('Cards drawn, by kind',bars(rows(byk)),false)}`;
 }
 async function afterRender(){
