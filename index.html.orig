@@ -1212,11 +1212,12 @@ function pickSpill(key,cells,sp,seam){
 }
 
 /* ---------- ritual ---------- */
-/* A deck pass is a fixed number of draws: the size of the pile when it began. Shuffle moves cards around but does not restart the count. */
-function passInit(){const D=S.deck;if(S.passSize==null){S.passDrawn=D.discard.length;S.passSize=D.draw.length+D.discard.length}}
+/* a deck pass is a fixed number of draws, whatever the size of the deck */
+const PASS_DRAWS=85;
+function passInit(){const D=S.deck;if(S.passDrawn==null)S.passDrawn=D.discard.length;S.passSize=PASS_DRAWS}
 function completePass(){
   const D=S.deck;S.passes=(S.passes||0)+1;S.passMarks=(S.passMarks||[]).concat([{n:S.passes,seq:S.seq,date:today()}]);
-  S.passDrawn=0;S.passSize=D.draw.length+D.discard.length;
+  S.passDrawn=0;S.passSize=PASS_DRAWS;
   const ag=checkAge();const joined=ag?unlockWaiting():[];
   S.banner=ag?`Pass ${S.passes} is complete, and the ${ag} begins.${joined.length?' '+[...new Set(joined)].join(', ')+' joins the deck.':''}`:`Pass ${S.passes} is complete.`;
 }
@@ -3791,7 +3792,7 @@ async function fillStats(){
    const ru=ruinsAt(S.seq).filter(q=>q.first),standing=ru.filter(q=>q.now===0);
    ruinBlock=(ru.length?`<p class="t">${standing.length} ruin${standing.length===1?'':'s'} standing${ru.length>standing.length?`, ${ru.length-standing.length} built over`:''}.</p>`+ru.slice(-12).reverse().map(q=>`<div class="rc"><b>${q.now>0?'Rebuilt: ':'Ruins of '}${esc(q.name)}</b><div class="rm">lost to ${esc(q.cause)} in change ${q.seq}</div></div>`).join(''):'')}
   {const ai=ageAt(S.seq),nx=AGES[ai+1],pi=passInfo();
-   ageBlock=`<p class="t"><b>${esc(AGES[ai].n)}</b> · deck pass ${pi.pass}, ${pi.drawn} of ${pi.total} cards drawn${S.passEst?' (passes before this were estimated)':''}.</p>`+
+   ageBlock=`<p class="t"><b>${esc(AGES[ai].n)}</b> · deck pass ${pi.pass}, ${pi.drawn} of ${pi.total} draws${S.passEst?' (passes before this were estimated)':''}.</p>`+
     ((S.deck.waiting||[]).length?`<p class="t">${(S.deck.waiting||[]).length} card${(S.deck.waiting||[]).length===1?'':'s'} waiting for their conditions.</p>`:'')+(nx?ageChecklist(ai,nx):'<p class="t">The last age.</p>')+sciHTML()+
     `<p class="t">${(S.ages||[]).map(([q,i])=>`${esc(AGES[Math.min(i,AGES.length-1)].n)} from change ${q}`).join(' · ')}</p>`}
   const cl=climateAt(S.seq),ss=seasonNow(),tide=tideAt(S.seq),dims=ps.filter(p=>p.dim).length;
