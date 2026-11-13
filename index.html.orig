@@ -1186,7 +1186,7 @@ async function roll(){
     c.target=pick.k;c.isNew=true;meta=emptyMeta();
   } else {
     const cands=eligible(card);
-    if(!cands.length){c.fizzle=K==='disaster'?(card.mode==='tsunami'?'No painted ground is close enough to the open sea for a tsunami.':'The disaster finds nothing painted to strike.'):K==='rewind'?'No panel has an earlier generation to go back to.':K==='erode'?'There is nothing painted to erode.':K==='mirror'?'No panel has anything to mirror yet.':K==='void'?'The void finds nothing painted to take.':K==='wall'?'There is nothing painted to wall.':K==='dimension'?'No panel has anything to push yet.':'No panel can take new paint.';save();render();return}
+    if(!cands.length){c.fizzle=K==='disaster'?(card.mode==='tsunami'?'No painted ground is close enough to the outer ocean for a tsunami.':'The disaster finds nothing painted to strike.'):K==='rewind'?'No panel has an earlier generation to go back to.':K==='erode'?'There is nothing painted to erode.':K==='mirror'?'No panel has anything to mirror yet.':K==='void'?'The void finds nothing painted to take.':K==='wall'?'There is nothing painted to wall.':K==='dimension'?'No panel has anything to push yet.':'No panel can take new paint.';save();render();return}
     const a=dieRoll(),b=dieRoll();c.dice.push({l:'Panel',v:a},{l:'Panel',v:b});
     const p=cands[((a-1)*6+(b-1))%cands.length];c.target=p.key;meta=p;
   }
@@ -3047,7 +3047,7 @@ const DIS={
   plague:{n:'Plague',w:'It passes from settlement to settlement and spares the land.'},
   slide:{n:'Landslide',w:'It slides down the steepest ground.'},
   drought:{n:'Drought',w:'A wide patch of dry, bright ground cracks and bleaches.'},
-  tsunami:{n:'Tsunami',w:'It only reaches painted ground within 3 squares of the open sea. Rifts, canals and inland seas do not count.'}
+  tsunami:{n:'Tsunami',w:'It only reaches painted ground within 3 squares of the outer ocean. Rifts, canals, inland seas and enclosed bays do not count.'}
 };
 const DTYPES=['fire','flood','quake','volcano','meteor','plague','slide','drought','tsunami'];
 const DCODE={fire:1,flood:2,quake:3,volcano:4,meteor:5,plague:6,slide:7,drought:8,tsunami:9};
@@ -3130,10 +3130,10 @@ async function cellColors(v){
   for(let i=0;i<N;i++){r[i]=d[i*4]/255;g[i]=d[i*4+1]/255;b[i]=d[i*4+2]/255}
   return CCACHE[v.img]={r,g,b};
 }
-/* open sea only: rifts, canals, dams, inland seas and tide spill are flooded ground, not ocean, so they cannot raise a tsunami */
+/* the outer ocean only: rifts, canals, dams, inland seas, tide spill and enclosed bays cannot raise a tsunami */
 function nearSea(sc,p,i,rad){
   const bb=bbox(),ox=(p.x-bb.minx)*COLS,oy=(bb.maxy-p.y)*ROWS,cx=ox+i%COLS,cy=oy+((i/COLS)|0);
-  for(let dy=-rad;dy<=rad;dy++)for(let dx=-rad;dx<=rad;dx++){const x=cx+dx,y=cy+dy;if(x<0||y<0||x>=sc.gw||y>=sc.gh)return true;const q=y*sc.gw+x;if(sc.sea[q]&&!sc.fl[q])return true}
+  for(let dy=-rad;dy<=rad;dy++)for(let dx=-rad;dx<=rad;dx++){const x=cx+dx,y=cy+dy;if(x<0||y<0||x>=sc.gw||y>=sc.gh)return true;const q=y*sc.gw+x;if(sc.oc[q])return true}
   return false;
 }
 /* Where a disaster lands depends on the ground: its type scores each painted square, the Start die picks one of the best seeds, and it grows from there. */
@@ -3276,7 +3276,12 @@ function seaCells(step){
   const dep=new Int16Array(gw*gh).fill(32000),q2=[];for(let c=0;c<gw*gh;c++)if(!sea[c]){dep[c]=0;q2.push(c)}
   for(let h=0;h<q2.length;h++){const c=q2[h],x=c%gw,y=(c/gw)|0;
     for(const n of [x>0?c-1:-1,x<gw-1?c+1:-1,y>0?c-gw:-1,y<gh-1?c+gw:-1]){if(n<0||dep[n]<=dep[c]+1)continue;dep[n]=dep[c]+1;q2.push(n)}}
-  return SEAC={sig,gw,gh,minx:bb.minx,maxy:bb.maxy,sea,dep,st,fl,rise};
+  /* the outer ocean: sea joined to the edge of the map or to ground with no panel; enclosed bays and lakes of tide water are not */
+  const oc=new Uint8Array(gw*gh),oq=[];
+  for(let c=0;c<gw*gh;c++){const x=c%gw,y=(c/gw)|0;if(sea[c]&&!fl[c]&&(st[c]===0||x===0||y===0||x===gw-1||y===gh-1)){oc[c]=1;oq.push(c)}}
+  for(let h=0;h<oq.length;h++){const c=oq[h],x=c%gw,y=(c/gw)|0;
+    for(const n of [x>0?c-1:-1,x<gw-1?c+1:-1,y>0?c-gw:-1,y<gh-1?c+gw:-1]){if(n<0||oc[n]||!sea[n]||fl[n])continue;oc[n]=1;oq.push(n)}}
+  return SEAC={sig,gw,gh,minx:bb.minx,maxy:bb.maxy,sea,dep,st,fl,rise,oc};
 }
 /* Which squares of a picture carry drawn graphics (roads, flights, blobs): those stay visible under the sea. */
 const INKC={};
@@ -3438,7 +3443,7 @@ function viewRules(){
   <li><b>Road, Railway:</b> join two settlements. The Reach die picks how far. The route bends around steep ground, curves through its turns and can cross panels.</li>
   <li><b>Flight:</b> a dotted flight path with a small plane, arcing between two settlements. It ignores terrain and always reaches towards the far half of the map's settlements, so it links distant cities. Dotted lines on the map always mean flights.</li>
   <li><b>Rewind:</b> one panel goes back a generation, once.</li>
-  <li><b>Wildfire, Flood, Earthquake, Eruption, Meteor Strike, Plague, Landslide, Drought, Tsunami, Great Calamity:</b> a disaster strikes painted squares on a panel. The terrain steers it: fire burns green ground, floods follow the rivers and swell them, eruptions pour downhill, tsunamis only reach the open-sea coast (not rifts, canals or inland seas). The Level die sets the damage: 1 to 2 settlements drop a tier, 3 to 4 two tiers, 5 to 6 razed. Walls take one level less. The scar is drawn over the map and fades as the map is updated, but the people lost stay lost. Painting over a scar clears it.</li>
+  <li><b>Wildfire, Flood, Earthquake, Eruption, Meteor Strike, Plague, Landslide, Drought, Tsunami, Great Calamity:</b> a disaster strikes painted squares on a panel. The terrain steers it: fire burns green ground, floods follow the rivers and swell them, eruptions pour downhill, tsunamis only reach the outer-ocean coast (not rifts, canals, inland seas or enclosed bays). The Level die sets the damage: 1 to 2 settlements drop a tier, 3 to 4 two tiers, 5 to 6 razed. Walls take one level less. The scar is drawn over the map and fades as the map is updated, but the people lost stay lost. Painting over a scar clears it.</li>
   <li><b>Events:</b> Outbreak, Famine, Migration, Festival and Border Dispute land on settlements and leave something behind for a few changes: lost or gained people, output up or down, closed routes. Places they trade with feel them too.</li>
   <li><b>Realms:</b> each great city holds the land nearest to it. Rivers, walls and snowy mountains slow its reach, so borders follow them. The Realms button switches to a realm view: every other layer and name goes off, leaving the plain map with the realms tinted and named. Press it again and everything comes back as it was. Names turns the other labels back on while you are in it.</li>
   <li><b>Ruins:</b> a void, erosion, disaster or dimension that wipes out a settlement leaves ruins on the map. If someone builds there again, the square remembers.</li>

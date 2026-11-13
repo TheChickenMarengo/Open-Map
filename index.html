@@ -559,6 +559,21 @@ const NEWCARDS6=[['New Panel','black',9,'newpanel','photo']];
 const NEWCARDS7=[['Cold Snap','black',1,'climate','cold'],['Heatwave','red',1,'climate','warm'],['Monsoon','black',1,'climate','wet'],['Dry Spell','red',1,'climate','dry']];
 /* Some windows force the darkroom to draw from a family of edits (1-based indices into EDITS). */
 const POOLS={'Water Window':[13,14,15],'Green Window':[16,17,19,20],'Dry Window':[17,18],'Colour Window':[4,5,7,8],'Pattern Window':[9,10,11],'Warp Window':[1,2,6]};
+
+/* Twelfth deck update: more looks for windows, and strip-shaped windows. */
+const NEWCARDS12=[
+  ['Negative Window','black',7,'paint','negative'],['Negative Window','red',6,'paint','negative'],['Blueprint Window','red',8,'paint','blueprint'],
+  ['Blueprint Window','black',6,'paint','blueprint'],['Halftone Window','black',8,'paint','halftone'],['Halftone Window','red',6,'paint','halftone'],
+  ['Posterise Window','red',7,'paint','posterise'],['Posterise Window','black',6,'paint','posterise'],['Duotone Window','black',8,'paint','duotone'],
+  ['Duotone Window','red',6,'paint','duotone'],['Etching Window','red',8,'paint','etching'],['Etching Window','black',6,'paint','etching'],
+  ['Mosaic Window','black',8,'paint','mosaic'],['Mosaic Window','red',6,'paint','mosaic'],['Soft Focus Window','red',8,'paint','softfocus'],
+  ['Soft Focus Window','black',6,'paint','softfocus'],['Faded Window','black',8,'paint','faded'],['Night Window','red',8,'paint','night'],
+  ['Stained Glass Window','red',7,'paint','stained'],['Glitch Window','black',7,'paint','glitch'],['Woodcut Window','red',8,'paint','woodcut'],
+  ['Heat Window','black',7,'paint','heat'],['Frost Window','red',7,'paint','frost'],['Watercolour Window','black',8,'paint','watercolour'],
+  ['Watercolour Window','red',6,'paint','watercolour'],['Green Window','black',6,'paint','photo'],['Colour Window','black',6,'paint','photo'],
+  ['Pattern Window','red',6,'paint','photo'],['Dry Window','red',8,'paint','photo'],['Warp Window','black',6,'paint','photo'],
+  ['Wide Window','red',8,'paint','wide'],['Tall Window','black',8,'paint','tall'],['Corner Window','red',6,'paint','corner']
+];
 let ADDSEQ=0;
 /* Sundering, Canal and Inland Sea broke the continent too often, so they sit in the reserve now and only come in through Add Card. Maps made earlier get them moved out of the piles once. */
 function retuneLandCards(){
@@ -584,8 +599,8 @@ function newState(){
   D('Add Card','black',1,'addcard'); D('Retire Card','red',1,'retire'); D('Adjust Numbers','black',1,'adjust'); D('Shuffle','red',1,'shuffle');
   R('Checkerboard','black',10,'paint','check'); R('Polka','red',8,'paint','dots'); R('Scatter Window','black',7,'paint','scatter');
   R('Mono Window','red',6,'paint','mono'); R('Big Void','red',14,'void'); R('Great Settlement','black',16,'paint','city');
-  const st={v:1,seq:0,panels:{},deck:{draw:shuffle(draw),discard:[],retired:[],reserve:shuffle(reserve),cards},log:[],cur:null,last:null,lost:0,cardsV3:true,cardsV4:true,cardsV5:true,cardsV6:true,scarV2:true,tides:[],climate:[],cardsV7:true,cardsV8:true,cardsV9:true,cardsV10:true,cardsV11:true,cardsV12:true,rifts:[],events:[],notes:{},realmCaps:[],passes:0,passMarks:[],ages:[[0,0]],ageAtPass:0,world:{id:'home',name:'Home world'},seed:Math.random().toString(36).slice(2,10)};
-  addNewCards(st.deck);addNewCards(st.deck,NEWCARDS2);addNewCards(st.deck,NEWCARDS3);addNewCards(st.deck,NEWCARDS7);addNewCards(st.deck,NEWCARDS8);addNewCards(st.deck,NEWCARDS9);addNewCards(st.deck,NEWCARDS10);addNewCards(st.deck,NEWCARDS11);st.deck.draw=shuffle(st.deck.draw);return st;
+  const st={v:1,seq:0,panels:{},deck:{draw:shuffle(draw),discard:[],retired:[],reserve:shuffle(reserve),cards},log:[],cur:null,last:null,lost:0,cardsV3:true,cardsV4:true,cardsV5:true,cardsV6:true,scarV2:true,tides:[],climate:[],cardsV7:true,cardsV8:true,cardsV9:true,cardsV10:true,cardsV11:true,cardsV12:true,cardsV13:true,rifts:[],events:[],notes:{},realmCaps:[],passes:0,passMarks:[],ages:[[0,0]],ageAtPass:0,world:{id:'home',name:'Home world'},seed:Math.random().toString(36).slice(2,10)};
+  addNewCards(st.deck);addNewCards(st.deck,NEWCARDS2);addNewCards(st.deck,NEWCARDS3);addNewCards(st.deck,NEWCARDS7);addNewCards(st.deck,NEWCARDS8);addNewCards(st.deck,NEWCARDS9);addNewCards(st.deck,NEWCARDS10);addNewCards(st.deck,NEWCARDS11);addNewCards(st.deck,NEWCARDS12);st.deck.draw=shuffle(st.deck.draw);return st;
 }
 const cardOf=id=>S.deck.cards[id];
 /* Each new map has its own seed, so its hills, coast, rivers and place names are its own. Maps made before seeds existed have none and look as they always did. */
@@ -598,7 +613,7 @@ function popTotal(){let p=0;const rd=riftSet();for(const k in S.panels){const t=
 function sortedPanels(){return Object.values(S.panels).sort((a,b)=>(a.x*a.x*64+a.y*a.y*100)-(b.x*b.x*64+b.y*b.y*100)||a.versions[0].seq-b.versions[0].seq)}
 
 /* ---------- card text ---------- */
-const MODEDESC={ink:'The photo is cut to black ink on paper.',sepia:'The photo is toned to old brown.',pixel:'Each square is melted into a 5 by 5 block of flat colour.',photo:'The photo shows through.',mono:'The photo shows through in grey.',band:'Each square takes one flat colour from the photo.',dots:'One dot per square, sized by darkness.',city:'Your photo stays under a pattern: dots for hamlets, dashes or rings for villages, street grids for towns, crosshatch for cities. Darker photo areas grow bigger settlements.',check:'Every second square only.',scatter:'Squares chosen at random.'};
+const MODEDESC={ink:'The photo is cut to black ink on paper.',sepia:'The photo is toned to old brown.',pixel:'Each square is melted into a 5 by 5 block of flat colour.',photo:'The photo shows through.',mono:'The photo shows through in grey.',band:'Each square takes one flat colour from the photo.',dots:'One dot per square, sized by darkness.',city:'Your photo stays under a pattern: dots for hamlets, dashes or rings for villages, street grids for towns, crosshatch for cities. Darker photo areas grow bigger settlements.',check:'Every second square only.',scatter:'Squares chosen at random.',negative:'Every colour is inverted, like a photographic negative.',blueprint:'The photo becomes white lines and light on deep blue, with a faint drawing grid.',halftone:'Newspaper dots in black on paper, bigger where the photo is darker.',posterise:'The photo is cut to a few flat colours.',duotone:'Two inks only: deep wine for the dark and cream for the light.',etching:'Fine engraved hatching on cream paper, thicker where the photo is dark.',mosaic:'Big coloured tiles with dark grout between them.',softfocus:'Blurred and bright, like a dream.',faded:'Washed out, like an old print left in the sun.',night:'A dark blue night, with the brightest spots left as lit windows.',stained:'Coloured glass panes held by black lead.',glitch:'The colours slip apart, and a few slices of the picture shift sideways.',woodcut:'Thick black cuts and stripes on cream, like a woodcut print.',heat:'The photo read as a heat map, from cold blue to white-hot.',frost:'White frost creeps in from the edges of each square.',watercolour:'Soft blended colour on paper, as if painted wet.',wide:'The squares make a straight strip along one row.',tall:'The squares make a straight strip up one column.',corner:'The squares make an L: one arm along a row and one up a column.'};
 function ruleText(c){
   const dir=c.color==='red'?'counter-clockwise':'clockwise';
   switch(c.kind){
@@ -692,6 +707,11 @@ function pickGrow(meta,card,sd,n){
   return out;
 }
 function pickPaint(meta,card,sd,grow){
+  if(SHAPES.has(card.mode)){
+    const ord0=orderedCells(sd,card.color==='red').filter(i=>!meta.w[i]);if(!ord0.length)return[];
+    const a=ord0.find(i=>meta.f[i]===0)??ord0[0],ar=(a/COLS)|0,ac=a%COLS,m=card.mode;
+    const cost=i=>{const dr=Math.abs(((i/COLS)|0)-ar),dc=Math.abs(i%COLS-ac);if(m==='wide')return dr?100+dr*10+dc:dc;if(m==='tall')return dc?100+dc*10+dr:dr;const sc=ac<COLS/2?1:-1,sr=ar<ROWS/2?1:-1,r0=(((i/COLS)|0)-ar)*sr,c0=(i%COLS-ac)*sc;return (dr===0&&c0>=0)||(dc===0&&r0>=0)?dr+dc:1000+dr+dc};
+    return ord0.slice().sort((p,q)=>cost(p)-cost(q)).slice(0,card.units)}
   if(grow&&card.mode!=='check'&&card.mode!=='scatter'){
     const g=pickGrow(meta,card,sd,card.units);
     if(g.length>=Math.min(card.units,3)){
@@ -808,6 +828,57 @@ function cellStat(i){
   }
   r/=n;g/=n;b/=n;return{r,g,b,l:(0.2126*r+0.7152*g+0.0722*b)/255};
 }
+/* Extra window looks. Each takes the square's pixels and redraws them; r is a seeded random so a square always looks the same. */
+const FXM=new Set(['negative','blueprint','halftone','posterise','duotone','etching','mosaic','softfocus','faded','night','stained','glitch','woodcut','heat','frost','watercolour']);
+const SHAPES=new Set(['wide','tall','corner']);
+function boxBlurRGB(src,w,h,rr){
+  const out=new Float32Array(w*h*3),tmp=new Float32Array(w*h*3);
+  for(let c=0;c<3;c++){
+    for(let y=0;y<h;y++){let acc=0,cnt=0;for(let x=-rr;x<=rr;x++){const xx=Math.min(w-1,Math.max(0,x));acc+=src[(y*w+xx)*4+c];cnt++}
+      for(let x=0;x<w;x++){tmp[(y*w+x)*3+c]=acc/cnt;const a=Math.min(w-1,x+rr+1),b=Math.max(0,x-rr);acc+=src[(y*w+a)*4+c]-src[(y*w+b)*4+c]}}
+    for(let x=0;x<w;x++){let acc=0,cnt=0;for(let y=-rr;y<=rr;y++){const yy=Math.min(h-1,Math.max(0,y));acc+=tmp[(yy*w+x)*3+c];cnt++}
+      for(let y=0;y<h;y++){out[(y*w+x)*3+c]=acc/cnt;const a=Math.min(h-1,y+rr+1),b=Math.max(0,y-rr);acc+=tmp[(a*w+x)*3+c]-tmp[(b*w+x)*3+c]}}}
+  return out}
+function fxPixels(id,mode,r){
+  const w=id.width,h=id.height,d=id.data,src=new Uint8ClampedArray(d),n=w*h,L=new Float32Array(n);
+  for(let k=0;k<n;k++){const o=k*4;L[k]=.2126*src[o]+.7152*src[o+1]+.0722*src[o+2]}
+  const mix=(a,b,t)=>a+(b-a)*t,set=(o,R,G,B)=>{d[o]=R;d[o+1]=G;d[o+2]=B;d[o+3]=255},nz=(x,y)=>(Math.imul(x+7,73856093)^Math.imul(y+13,19349663))>>>0,nzf=(x,y)=>(nz(x,y)%1000)/1000;
+  const ramp=(t,st)=>{t=Math.max(0,Math.min(.9999,t))*(st.length-1);const i=Math.floor(t),f=t-i;return [mix(st[i][0],st[i+1][0],f),mix(st[i][1],st[i+1][1],f),mix(st[i][2],st[i+1][2],f)]};
+  const blockMean=s=>{const bw=Math.ceil(w/s),bh=Math.ceil(h/s),m=new Float32Array(bw*bh*4);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const b=((y/s|0)*bw+(x/s|0))*4,o=(y*w+x)*4;m[b]+=src[o];m[b+1]+=src[o+1];m[b+2]+=src[o+2];m[b+3]++}
+    return {bw,m}};
+  if(mode==='negative'){for(let o=0;o<d.length;o+=4){d[o]=255-src[o];d[o+1]=255-src[o+1];d[o+2]=255-src[o+2]}}
+  else if(mode==='blueprint'){const g=Math.max(4,Math.round(w/5));
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=y*w+x,t=L[k]/255;let R=mix(14,215,t),G=mix(48,230,t),B=mix(112,255,t);if(x%g===0||y%g===0){R+=34;G+=34;B+=26}set(k*4,R,G,B)}}
+  else if(mode==='halftone'){const s=Math.max(4,Math.round(w/9)),{bw,m}=blockMean(s);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const bx=x/s|0,by=y/s|0,b=(by*bw+bx)*4,mm=(.2126*m[b]+.7152*m[b+1]+.0722*m[b+2])/m[b+3]/255,rad=s*.74*Math.sqrt(Math.max(0,1-mm)),dx=x-(bx+.5)*s,dy=y-(by+.5)*s,o=(y*w+x)*4;
+      if(dx*dx+dy*dy<rad*rad)set(o,22,24,30);else set(o,244,240,228)}}
+  else if(mode==='posterise'){for(let o=0;o<d.length;o+=4)for(let c=0;c<3;c++)d[o+c]=Math.round(src[o+c]/255*2)/2*255}
+  else if(mode==='duotone'){for(let k=0;k<n;k++){const t=L[k]/255;set(k*4,mix(96,250,t),mix(16,226,t),mix(48,170,t))}}
+  else if(mode==='etching'){const s=Math.max(3,Math.round(w/16));
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=y*w+x,t=L[k]/255,o=k*4;let ink=((y%s)+.5)<s*(1-t)*1.15;if(!ink&&t<.28&&((x%s)+.5)<s*(.28-t)*2.2)ink=true;if(ink)set(o,38,28,22);else set(o,240,232,214)}}
+  else if(mode==='mosaic'){const s=Math.max(4,Math.round(w/6)),{bw,m}=blockMean(s),tj=[];
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const bx=x/s|0,by=y/s|0,b=(by*bw+bx)*4,o=(y*w+x)*4;if(tj[by*bw+bx]==null)tj[by*bw+bx]=(r()-.5)*26;const j=tj[by*bw+bx];
+      if(x%s===0||y%s===0)set(o,22,22,26);else set(o,m[b]/m[b+3]+j,m[b+1]/m[b+3]+j,m[b+2]/m[b+3]+j)}}
+  else if(mode==='softfocus'){const bl=boxBlurRGB(src,w,h,Math.max(2,Math.round(w/14)));for(let k=0;k<n;k++)set(k*4,bl[k*3]*.9+30,bl[k*3+1]*.9+30,bl[k*3+2]*.9+30)}
+  else if(mode==='faded'){for(let o=0;o<d.length;o+=4){const R=(src[o]-128)*.85+128,G=(src[o+1]-128)*.85+128,B=(src[o+2]-128)*.85+128;set(o,mix(R,206,.45),mix(G,196,.45),mix(B,176,.45))}}
+  else if(mode==='night'){for(let k=0;k<n;k++){const o=k*4,t=L[k]/255;if(t>.82)set(o,255,214,120);else set(o,src[o]*.22,src[o+1]*.32,src[o+2]*.62+20)}}
+  else if(mode==='stained'){const pts=[];for(let k=0;k<7;k++){const cx=((k%3)+r())*w/3,cy=((k/3|0)+r())*h/3,sx=Math.min(w-1,cx|0),sy=Math.min(h-1,cy|0),o=(sy*w+sx)*4,l=L[sy*w+sx];pts.push([cx,cy,Math.max(0,Math.min(255,l+(src[o]-l)*1.6)),Math.max(0,Math.min(255,l+(src[o+1]-l)*1.6)),Math.max(0,Math.min(255,l+(src[o+2]-l)*1.6))])}
+    const lead=Math.max(1.4,w/34);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){let d1=1e9,d2=1e9,bi=0;for(let k=0;k<pts.length;k++){const dd=Math.hypot(x-pts[k][0],y-pts[k][1]);if(dd<d1){d2=d1;d1=dd;bi=k}else if(dd<d2)d2=dd}
+      const o=(y*w+x)*4,t=.8+.3*L[y*w+x]/255;if(d2-d1<lead)set(o,14,14,18);else set(o,pts[bi][2]*t,pts[bi][3]*t,pts[bi][4]*t)}}
+  else if(mode==='glitch'){const sh=Math.max(2,Math.round(w/16)),bands=[];for(let k=0;k<3;k++){const y0=r()*h|0;bands.push([y0,y0+Math.max(2,h/12|0),(r()<.5?-1:1)*sh*2])}
+    for(let y=0;y<h;y++){let off=0;for(const b of bands)if(y>=b[0]&&y<b[1])off=b[2];
+      for(let x=0;x<w;x++){const o=(y*w+x)*4,xr=Math.min(w-1,Math.max(0,x+sh+off)),xg=Math.min(w-1,Math.max(0,x+off)),xb=Math.min(w-1,Math.max(0,x-sh+off));set(o,src[(y*w+xr)*4],src[(y*w+xg)*4+1],src[(y*w+xb)*4+2])}}}
+  else if(mode==='woodcut'){const per=Math.max(3,w/12);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=y*w+x,o=k*4,v=L[k]+Math.sin((y+x*.25)*6.2832/per)*38;if(v<120)set(o,16,14,12);else set(o,mix(238,src[o],.15),mix(228,src[o+1],.15),mix(200,src[o+2],.15))}}
+  else if(mode==='heat'){const st=[[8,6,60],[110,10,130],[220,40,50],[255,170,30],[255,250,200]];for(let k=0;k<n;k++){const c=ramp(L[k]/255,st);set(k*4,c[0],c[1],c[2])}}
+  else if(mode==='frost'){
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=y*w+x,o=k*4,e=Math.min(x,y,w-1-x,h-1-y)/(w*.35),f=Math.min(1,Math.pow(Math.max(0,1-e),1.5)+nzf(x,y)*.2*Math.max(0,1-e));
+      set(o,mix(src[o]*.8,236,f),mix(src[o+1]*.92,246,f),mix(Math.min(255,src[o+2]*1.05+10),255,f))}}
+  else if(mode==='watercolour'){const bl=boxBlurRGB(src,w,h,2);
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const k=y*w+x,nn=(nzf(x,y)-.5)*12;const c=[0,1,2].map(i=>{const v=Math.round(bl[k*3+i]/255*5)/5*255;return mix(v,[246,242,230][i],.22)+nn});set(k*4,c[0],c[1],c[2])}}
+}
 function paintCell(ctx,mode,i,meta){
   const x=(i%COLS)*CELL,y=((i/COLS)|0)*CELL,st=cellStat(i),rgb=`rgb(${st.r|0},${st.g|0},${st.b|0})`;
   meta.f[i]=1;meta.t[i]=0;
@@ -828,6 +899,7 @@ function paintCell(ctx,mode,i,meta){
       ctx.putImageData(id,x*Q,y*Q)}
     if(mode==='pixel'){const t=document.createElement('canvas');t.width=t.height=5;const tx=t.getContext('2d');tx.drawImage(ctx.canvas,x*Q,y*Q,CELL*Q,CELL*Q,0,0,5,5);ctx.imageSmoothingEnabled=false;ctx.drawImage(t,0,0,5,5,x,y,CELL,CELL);ctx.imageSmoothingEnabled=true}
     if(mode==='mono'){const id=ctx.getImageData(x*Q,y*Q,CELL*Q,CELL*Q),d=id.data;for(let o=0;o<d.length;o+=4){const g=.2126*d[o]+.7152*d[o+1]+.0722*d[o+2];d[o]=d[o+1]=d[o+2]=g}ctx.putImageData(id,x*Q,y*Q)}
+    if(FXM.has(mode)){const id=ctx.getImageData(x*Q,y*Q,CELL*Q,CELL*Q);fxPixels(id,mode,rng(hash(i+'fx'+mode)));ctx.putImageData(id,x*Q,y*Q)}
   }
 }
 /* Settlements are a pattern laid over the photo, never a replacement for it. Each size has its own family, and each square varies
@@ -3543,7 +3615,9 @@ const KEY=[
   ['Sepia','Toned to old brown.',()=>swCells('sepia')()],
   ['Pixel','Each square melted into a 5 by 5 block of flat colour.',()=>swCells('pixel')()],
   ['Checkerboard','Alternate squares only.',()=>swPanel((ctx,m)=>{for(const i of SWC)if(((i%COLS)+((i/COLS)|0))%2===0)paintCell(ctx,'photo',i,m)})],
-  ['Scatter','Squares chosen at random.',()=>swPanel((ctx,m)=>{for(const i of [0,2,9,11,3])paintCell(ctx,'photo',i,m)})]
+  ['Scatter','Squares chosen at random.',()=>swPanel((ctx,m)=>{for(const i of [0,2,9,11,3])paintCell(ctx,'photo',i,m)})],
+  ...[['negative','Negative'],['blueprint','Blueprint'],['halftone','Halftone'],['posterise','Posterise'],['duotone','Duotone'],['etching','Etching'],['mosaic','Mosaic'],['softfocus','Soft focus'],['faded','Faded'],['night','Night'],['stained','Stained glass'],['glitch','Glitch'],['woodcut','Woodcut'],['heat','Heat'],['frost','Frost'],['watercolour','Watercolour']].map(([m,t])=>[t,MODEDESC[m],()=>swCells(m)()]),
+  ['Wide, tall and corner strips','Wide Window lays its squares along a row, Tall Window up a column, Corner Window as an L.',()=>swPanel((ctx,m)=>{for(const i of [8,9,10,11,12,13,14,15,2,18,26])paintCell(ctx,'photo',i,m)})]
  ]],
  ['Highlights',[
   ['Blue squares','Shown on the panel preview: the squares the current card will change.',()=>swLine(g=>{g.fillStyle='rgba(31,95,168,.38)';g.strokeStyle='#1f5fa8';g.lineWidth=3;for(const x of [26,76]){g.fillRect(x,22,46,46);g.strokeRect(x+1.5,23.5,43,43)}})],
@@ -3804,6 +3878,7 @@ function modeFx(cv,mode){
       else if(mode==='ink'){const v=g>118?[244,240,228]:[18,22,28];d[o]=v[0];d[o+1]=v[1];d[o+2]=v[2]}
       else{d[o]=Math.min(255,g*1.08+22);d[o+1]=g*.86+12;d[o+2]=g*.62}}
     x.putImageData(id,0,0)}
+  else if(FXM.has(mode)){const id=x.getImageData(0,0,cv.width,cv.height);fxPixels(id,mode,rng(hash('fxprev'+mode)));x.putImageData(id,0,0)}
   else if(mode==='pixel'&&MAP){
     const bw=Math.max(1,MAP.sw*CELL/MAP.bw/5*cv.width/PW),bh=Math.max(1,MAP.sh*CELL/MAP.bh/5*cv.height/PH_),t=document.createElement('canvas');
     t.width=Math.max(1,Math.round(cv.width/bw));t.height=Math.max(1,Math.round(cv.height/bh));
@@ -4154,6 +4229,7 @@ for(const id of['camIn','libIn'])$(id).addEventListener('change',e=>{const f=e.t
   if(!S.cardsV10){addNewCards(S.deck,NEWCARDS10);S.cardsV10=true;S.rifts=S.rifts||[];save()}
   if(!S.cardsV11){addNewCards(S.deck,NEWCARDS11);S.cardsV11=true;save()}
   if(!S.cardsV12){retuneLandCards();S.cardsV12=true;save()}
+  if(!S.cardsV13){addNewCards(S.deck,NEWCARDS12);S.cardsV13=true;save()}
   S.events=S.events||[];S.notes=S.notes||{};
   if(S.passes==null){const D=S.deck,tot=D.draw.length+D.discard.length+D.retired.length+1;S.passes=Math.floor(Math.max(0,S.log.length-12)/Math.max(10,tot));S.passEst=true;S.passMarks=[];S.ages=[[0,0]];S.ageAtPass=S.passes;S.world={id:'home',name:'Home world'};save()}
   S.climate=S.climate||[];
