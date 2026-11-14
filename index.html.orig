@@ -200,6 +200,7 @@ svg.chart{width:100%;height:auto;background:var(--sheet);border:1px solid var(--
 .ccard:not(.insp){white-space:normal;width:max-content;max-width:210px;line-height:1.4}
 .ccard.insp{white-space:normal;width:max-content;max-width:190px;line-height:1.4}
 .cx{position:absolute;background:rgba(231,195,74,.3);outline:1.5px solid #e7c34a;outline-offset:-1px;pointer-events:none}
+.annal{white-space:pre-line}
 .ccard .bio{pointer-events:auto;position:relative;margin-top:4px;padding:1px 6px;font:500 9px/1.4 system-ui,sans-serif;background:transparent;color:#e7c34a;border:1px solid #e7c34a;border-radius:3px;cursor:pointer}
 .ccard .bio::after{content:"";position:absolute;inset:-7px}
 .ccard{position:absolute;transform:translate(-50%,14px);background:#0e1013;border:1.5px solid #e7c34a;color:#f1ece0;padding:4px 7px;font:400 10px/1.35 system-ui,sans-serif;white-space:nowrap;pointer-events:none;z-index:2}
@@ -602,7 +603,7 @@ function newState(){
   D('Add Card','black',1,'addcard'); D('Retire Card','red',1,'retire'); D('Adjust Numbers','black',1,'adjust'); D('Shuffle','red',1,'shuffle');
   R('Checkerboard','black',10,'paint','check'); R('Polka','red',8,'paint','dots'); R('Scatter Window','black',7,'paint','scatter');
   R('Mono Window','red',6,'paint','mono'); R('Big Void','red',14,'void'); R('Great Settlement','black',16,'paint','city');
-  const st={v:1,seq:0,panels:{},deck:{draw:shuffle(draw),discard:[],retired:[],reserve:shuffle(reserve),cards},log:[],cur:null,last:null,lost:0,cardsV3:true,cardsV4:true,cardsV5:true,cardsV6:true,scarV2:true,tides:[],climate:[],cardsV7:true,cardsV8:true,cardsV9:true,cardsV10:true,cardsV11:true,cardsV12:true,cardsV13:true,annalV2:true,rifts:[],events:[],notes:{},realmCaps:[],passes:0,passMarks:[],ages:[[0,0]],ageAtPass:0,world:{id:'home',name:'Home world'},seed:Math.random().toString(36).slice(2,10)};
+  const st={v:1,seq:0,panels:{},deck:{draw:shuffle(draw),discard:[],retired:[],reserve:shuffle(reserve),cards},log:[],cur:null,last:null,lost:0,cardsV3:true,cardsV4:true,cardsV5:true,cardsV6:true,scarV2:true,tides:[],climate:[],cardsV7:true,cardsV8:true,cardsV9:true,cardsV10:true,cardsV11:true,cardsV12:true,cardsV13:true,annalV2:true,annalV3:true,rifts:[],events:[],notes:{},realmCaps:[],passes:0,passMarks:[],ages:[[0,0]],ageAtPass:0,world:{id:'home',name:'Home world'},seed:Math.random().toString(36).slice(2,10)};
   addNewCards(st.deck);addNewCards(st.deck,NEWCARDS2);addNewCards(st.deck,NEWCARDS3);addNewCards(st.deck,NEWCARDS7);addNewCards(st.deck,NEWCARDS8);addNewCards(st.deck,NEWCARDS9);addNewCards(st.deck,NEWCARDS10);addNewCards(st.deck,NEWCARDS11);addNewCards(st.deck,NEWCARDS12);st.deck.draw=shuffle(st.deck.draw);return st;
 }
 const cardOf=id=>S.deck.cards[id];
@@ -2098,33 +2099,39 @@ const plur=(w,n)=>n===1?w:/y$/.test(w)?w.slice(0,-1)+'ies':/s$/.test(w)?w:w+'s';
 const art=w=>/^[aeiou]/i.test(w)?'an':'a';
 /* the greatest city of an age, kept as {n, p, f} (name, people, faith) */
 function bigCity(){const fm=faithMap(),big=(ALLCL||[]).filter(c=>c.kind==='city').sort((a,b)=>popOfCl(b)-popOfCl(a))[0];if(!big)return null;const f=fm.get(plainName(big)),F0=f!=null&&faithOf(f);return {n:plainName(big),p:popOfCl(big),f:F0?F0.name:''}}
+/* an age in full: nothing is left out, and each subject has its own short paragraph */
 function annalFor(i,live){
-  const st=ageStart(i);if(st==null)return '';const nx=ageStart(i+1),end=live||nx==null?S.seq+1:nx,inR=q=>q>=st&&q<end,n=Math.max(0,end-st-(live?1:0)),nm=AGES[i].n,out=[],v=hash('annal'+nm)%3;
+  const st=ageStart(i);if(st==null)return '';const nx=ageStart(i+1),end=live||nx==null?S.seq+1:nx,inR=q=>q>=st&&q<end,n=Math.max(0,end-st-(live?1:0)),nm=AGES[i].n,sec=[],v=hash('annal'+nm)%3;
   const big=live?bigCity():(S.annalBig||{})[i],chg=`${n} change${n===1?'':'s'}`;
   const strong=big&&big.n?`${fmt(big.p)} strong${big.f?` and faithful to ${big.f}`:''}`:'';
-  if(big&&big.n)out.push(live?(v===0?`The ${nm} is ${chg} old, and ${big.n} is its greatest city, ${strong}.`:v===1?`${chg.charAt(0).toUpperCase()+chg.slice(1)} into the ${nm}, ${big.n} stands as its greatest city, ${strong}.`:`So far the ${nm} has lasted ${chg}. ${big.n} is its greatest city, ${strong}.`)
+  if(big&&big.n)sec.push(live?(v===0?`The ${nm} is ${chg} old, and ${big.n} is its greatest city, ${strong}.`:v===1?`${chg.charAt(0).toUpperCase()+chg.slice(1)} into the ${nm}, ${big.n} stands as its greatest city, ${strong}.`:`So far the ${nm} has lasted ${chg}. ${big.n} is its greatest city, ${strong}.`)
     :(v===0?`The ${nm} ran for ${chg}. ${big.n} rose to be its greatest city, ${strong}.`:v===1?`Across ${chg}, ${big.n} grew into the greatest city of the ${nm}, ${strong}.`:`The ${nm} lasted ${chg}, and in that time ${big.n} became its greatest city, ${strong}.`));
-  else out.push(live?`The ${nm} is ${chg} old.`:`The ${nm} lasted ${chg}.`);
-  const F=[],Lo=[];for(const [nmx,r] of Object.entries(S.pl||{}))for(const e of r.ev)if(inR(e.s)){if(/^Founded/.test(e.x)&&!F.includes(nmx))F.push(nmx);else if(/^Was lost/.test(e.x)&&!Lo.includes(nmx))Lo.push(nmx)}
-  const lst=a=>`${joinL(a.slice(0,3))}${a.length>3?` and ${numw(a.length-3)} more`:''}`;
-  if(F.length&&Lo.length)out.push(`Settlers founded ${lst(F)}, but ${lst(Lo)} fell to ruin.`);
-  else if(F.length)out.push(`Settlers founded ${lst(F)}.`);
-  else if(Lo.length)out.push(`${capf(lst(Lo))} fell to ruin.`);
+  else sec.push(live?`The ${nm} is ${chg} old.`:`The ${nm} lasted ${chg}.`);
+  /* places */
+  const F=[],Lo=[],Rs=[];for(const [nmx,r] of Object.entries(S.pl||{}))for(const e of r.ev)if(inR(e.s)){if(/^Founded/.test(e.x)&&!F.includes(nmx))F.push(nmx);else if(/^Was lost/.test(e.x)&&!Lo.includes(nmx))Lo.push(nmx);else if(/^Was settled again/.test(e.x)&&!Rs.includes(nmx))Rs.push(nmx)}
+  const pl=[];if(F.length)pl.push(`Settlers founded ${joinL(F)}.`);if(Rs.length)pl.push(`${capf(joinL(Rs))} ${Rs.length===1?'was':'were'} settled again.`);if(Lo.length)pl.push(`${capf(joinL(Lo))} fell to ruin.`);if(pl.length)sec.push(pl.join(' '));
+  /* knowledge and wonders */
   const ds=[...new Set((((S.sci||{}).got)||[]).filter(g=>inR(g.seq)).map(g=>g.id))].map(id=>{const d=discOf(id);return d&&d[1]}).filter(Boolean).map(t=>t.toLowerCase());
-  const ws=(S.wonders||[]).filter(w=>inR(w.seq)),wtxt=ws.length?`raised ${joinL(ws.map(w=>`the ${w.wn} at ${w.n}`))}`:'';
-  const dtxt=ds.length?`learned ${joinL(ds.slice(0,3))}${ds.length>3?`, with ${numw(ds.length-3)} more art${ds.length>4?'s':''} besides`:''}`:'';
-  if(dtxt&&wtxt)out.push(`The people ${dtxt}, and ${wtxt}.`);else if(dtxt||wtxt)out.push(`The people ${dtxt||wtxt}.`);
-  const nt=S.log.filter(l=>l.note&&l.seq!=null&&inR(l.seq)),wars=[],fell=[],civ=[];
-  for(const l of nt){let m;if(l.cat==='war'&&(m=/^War breaks out between (.+?) and (.+?)\./.exec(l.text||'')))wars.push([m[1],m[2]]);else if(l.cat==='war'&&(m=/^(.+?) has fallen\./.exec(l.text||'')))fell.push(m[1]);else if(/broke into civil war/.test(l.text||''))civ.push(l.text)}
-  if(wars.length)out.push(wars.length===1?`War broke out between ${wars[0][0]} and ${wars[0][1]}.`:`War came ${wars.length===2?'twice':numw(wars.length)+' times'}, first between ${wars[0][0]} and ${wars[0][1]}.`);
-  if(fell.length)out.push(`${joinL(fell.slice(0,3))} fell in defeat.`);
-  if(civ.length)out.push(civ.length===1?'Civil war tore one realm apart.':`Civil war tore ${numw(civ.length)} realms apart.`);
-  const dc={};for(const l of S.log)if(l.seq!=null&&inR(l.seq)&&!l.note&&l.kind==='disaster'&&!/weather/i.test(l.card||''))dc[l.card.toLowerCase()]=(dc[l.card.toLowerCase()]||0)+1;
-  const dt=Object.entries(dc).sort((a,b)=>b[1]-a[1]).slice(0,3);
-  if(dt.length)out.push(`${capf(joinL(dt.map(([w,c])=>c===1?`${art(w)} ${w}`:`${numw(c)} ${plur(w,c)}`)))} struck the land.`);
-  const sc=nt.find(l=>l.cat==='faith'&&/schism/i.test(l.text||''));if(sc)out.push(sc.text);
-  const np=S.log.filter(l=>l.seq!=null&&inR(l.seq)&&!l.note&&l.kind==='newpanel').length;if(np)out.push(`The map spread across ${numw(np)} new panel${np>1?'s':''}.`);
-  return out.join(' ')}
+  const ws=(S.wonders||[]).filter(w=>inR(w.seq)),kn=[];
+  if(ds.length)kn.push(`The people learned ${joinL(ds)}.`);
+  if(ws.length)kn.push(`They raised ${joinL(ws.map(w=>`the ${w.wn} at ${w.n}`))}.`);if(kn.length)sec.push(kn.join(' '));
+  /* wars and realms, in the order they happened */
+  const nt=S.log.filter(l=>l.note&&l.seq!=null&&inR(l.seq)),wr=[],took={};
+  for(const l of nt){const t=l.text||'';let m;
+    if(l.cat==='war'){
+      if(m=/^(.+?) took (.+?) \(pop [\d,]+\) from (.+?)\.$/.exec(t)){const key=m[1]+'|'+m[3];(took[key]=took[key]||{w:m[1],l:m[3],p:[]}).p.push(m[2])}
+      else if(/^(War breaks out|.+ has fallen|.+ made peace|.+ now leads|.+ advance has stalled|Unrest)/.test(t)||/Industrial arms/.test(t))wr.push(t)}
+    else if(l.cat==='realm')wr.push(t)}
+  const tk=Object.values(took).map(o=>`${o.w} took ${joinL(o.p)} from ${o.l}.`);
+  const wsec=wr.concat(tk);if(wsec.length)sec.push(wsec.join('\n'));
+  /* disasters: every kind, with how often */
+  const dc={},wf=[];let wfn=0;for(const l of S.log)if(l.seq!=null&&inR(l.seq)&&!l.note&&l.kind==='disaster'){if(/weather/i.test(l.card||''))wfn++;else dc[l.card.toLowerCase()]=(dc[l.card.toLowerCase()]||0)+1}
+  const dt=Object.entries(dc).sort((a,b)=>b[1]-a[1]);
+  if(dt.length||wfn)sec.push((dt.length?`${capf(joinL(dt.map(([w,c])=>c===1?`${art(w)} ${w}`:`${numw(c)} ${plur(w,c)}`)))} struck the land.`:'')+(wfn?`${dt.length?' ':''}${capf(numw(wfn))} weather front${wfn>1?'s':''} crossed it, harming no one.`:''));
+  /* faiths: every birth, conversion of a city, shrine and schism */
+  const fa=nt.filter(l=>l.cat==='faith').map(l=>l.text);if(fa.length)sec.push(fa.join('\n'));
+  const np=S.log.filter(l=>l.seq!=null&&inR(l.seq)&&!l.note&&l.kind==='newpanel').length;if(np)sec.push(`The map spread across ${numw(np)} new panel${np>1?'s':''}.`);
+  return sec.join('\n\n')}
 function writeAnnal(i){
   S.annalBig=S.annalBig||{};const big=bigCity();if(big)S.annalBig[i]=big;
   const t=annalFor(i,false);S.annals=(S.annals||[]).filter(a=>a.ai!==i).concat([{ai:i,seq:S.seq,text:t}]);
@@ -2136,7 +2143,7 @@ function redoAnnals(){
   for(const a of S.annals||[]){const old=a.text,t=annalFor(a.ai,false);a.text=t;for(const l of S.log)if(l.note&&l.cat==='annal'&&l.text&&(l.text===old||l.text===`Annals of the ${AGES[a.ai].n}. ${old}`))l.text=t}}
 function annalsHTML(){
   const A=(S.annals||[]).slice().sort((a,b)=>b.ai-a.ai),ai=ageAt(S.seq),cur=annalFor(ai,true);
-  return `<div class="rc"><b>The ${esc(AGES[ai].n)} · so far</b><div class="rm">${esc(cur)}</div></div>`+A.map(a=>`<div class="rc"><b>The ${esc(AGES[a.ai].n)}</b><div class="rm">${esc(a.text)}</div></div>`).join('')}
+  return `<div class="rc"><b>The ${esc(AGES[ai].n)} · so far</b><div class="rm annal">${esc(cur)}</div></div>`+A.map(a=>`<div class="rc"><b>The ${esc(AGES[a.ai].n)}</b><div class="rm annal">${esc(a.text)}</div></div>`).join('')}
 /* ---------- continents: landmass count, the sea rising as the map grows, and rifts that split the land ---------- */
 const mirI=i=>((i/COLS)|0)*COLS+(COLS-1-i%COLS);
 /* rifts are stored against a panel's picture (its oid), so they follow it through Swap and Mirror like names do */
@@ -3884,7 +3891,7 @@ function viewLog(){
     if(chFil==='card'?note:chFil!=='all'&&logCat(l)!==chFil)return;shown++;
     if(l.date!==day){day=l.date;h+=`<div class="day">${niceDate(l.date)}</div>`}
     const dice=l.dice&&l.dice.length?' · '+l.dice.map(d=>d.v).join(' '):'',tg=note?'div':'button',at=note?'':` data-act="chron" data-n="${n}"`;
-    h+=`<${tg} class="ch"${at}>${l.img&&IMG[l.img]?`<img alt="" src="${IMG[l.img]}">`:note?`<div class="ph ic ${l.color}">${logCat(l)==='war'?'⚔':logCat(l)==='sci'?'✦':logCat(l)==='faith'?'☼':logCat(l)==='annal'?'❖':'◆'}</div>`:'<div class="ph"></div>'}<div><div class="s">${esc(storyLine(l,n))}</div><div class="n">${note?'':`#${n} · `}<span class="${l.color}">${esc(l.card)}${NUMKIND.has(l.kind)?' '+l.units:''}</span>${dice}</div></div></${tg}>`});
+    h+=`<${tg} class="ch"${at}>${l.img&&IMG[l.img]?`<img alt="" src="${IMG[l.img]}">`:note?`<div class="ph ic ${l.color}">${logCat(l)==='war'?'⚔':logCat(l)==='sci'?'✦':logCat(l)==='faith'?'☼':logCat(l)==='annal'?'❖':'◆'}</div>`:'<div class="ph"></div>'}<div><div class="s${logCat(l)==='annal'?' annal':''}">${esc(storyLine(l,n))}</div><div class="n">${note?'':`#${n} · `}<span class="${l.color}">${esc(l.card)}${NUMKIND.has(l.kind)?' '+l.units:''}</span>${dice}</div></div></${tg}>`});
   if(!shown)h+='<p class="empty">Nothing here yet.</p>';
   return h+'</div>';
 }
@@ -4414,7 +4421,7 @@ for(const id of['camIn','libIn'])$(id).addEventListener('change',e=>{const f=e.t
   if(!S.cardsV11){addNewCards(S.deck,NEWCARDS11);S.cardsV11=true;save()}
   if(!S.cardsV12){retuneLandCards();S.cardsV12=true;save()}
   if(!S.cardsV13){addNewCards(S.deck,NEWCARDS12);S.cardsV13=true;save()}
-  if(!S.annalV2){try{redoAnnals()}catch(e){console.warn('annals',e)}S.annalV2=true;save()}
+  if(!S.annalV3){try{redoAnnals()}catch(e){console.warn('annals',e)}S.annalV2=S.annalV3=true;save()}
   S.events=S.events||[];S.notes=S.notes||{};
   if(S.passes==null){const D=S.deck,tot=D.draw.length+D.discard.length+D.retired.length+1;S.passes=Math.floor(Math.max(0,S.log.length-12)/Math.max(10,tot));S.passEst=true;S.passMarks=[];S.ages=[[0,0]];S.ageAtPass=S.passes;S.world={id:'home',name:'Home world'};save()}
   S.climate=S.climate||[];

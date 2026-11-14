@@ -2127,7 +2127,7 @@ function annalFor(i,live){
   /* disasters: every kind, with how often */
   const dc={},wf=[];let wfn=0;for(const l of S.log)if(l.seq!=null&&inR(l.seq)&&!l.note&&l.kind==='disaster'){if(/weather/i.test(l.card||''))wfn++;else dc[l.card.toLowerCase()]=(dc[l.card.toLowerCase()]||0)+1}
   const dt=Object.entries(dc).sort((a,b)=>b[1]-a[1]);
-  if(dt.length||wfn)sec.push((dt.length?`${capf(joinL(dt.map(([w,c])=>c===1?`${art(w)} ${w}`:`${numw(c)} ${plur(w,c)}`)))} struck the land.`:'')+(wfn?`${dt.length?' ':''}${capf(numw(wfn))} weather front${wfn>1?'s':''} crossed it, harming no one.`:''));
+  if(dt.length)sec.push(`${capf(joinL(dt.map(([w,c])=>c===1?`${art(w)} ${w}`:`${numw(c)} ${plur(w,c)}`)))} struck the land.`);
   /* faiths: every birth, conversion of a city, shrine and schism */
   const fa=nt.filter(l=>l.cat==='faith').map(l=>l.text);if(fa.length)sec.push(fa.join('\n'));
   const np=S.log.filter(l=>l.seq!=null&&inR(l.seq)&&!l.note&&l.kind==='newpanel').length;if(np)sec.push(`The map spread across ${numw(np)} new panel${np>1?'s':''}.`);
