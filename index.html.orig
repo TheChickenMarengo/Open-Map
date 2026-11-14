@@ -200,6 +200,8 @@ svg.chart{width:100%;height:auto;background:var(--sheet);border:1px solid var(--
 .ccard:not(.insp){white-space:normal;width:max-content;max-width:210px;line-height:1.4}
 .ccard.insp{white-space:normal;width:max-content;max-width:190px;line-height:1.4}
 .cx{position:absolute;background:rgba(231,195,74,.3);outline:1.5px solid #e7c34a;outline-offset:-1px;pointer-events:none}
+.ccard .bio{pointer-events:auto;position:relative;margin-top:4px;padding:1px 6px;font:500 9px/1.4 system-ui,sans-serif;background:transparent;color:#e7c34a;border:1px solid #e7c34a;border-radius:3px;cursor:pointer}
+.ccard .bio::after{content:"";position:absolute;inset:-7px}
 .ccard{position:absolute;transform:translate(-50%,14px);background:#0e1013;border:1.5px solid #e7c34a;color:#f1ece0;padding:4px 7px;font:400 10px/1.35 system-ui,sans-serif;white-space:nowrap;pointer-events:none;z-index:2}
 .lb{position:absolute;white-space:nowrap;font:400 8px/1 system-ui,-apple-system,Helvetica,Arial,sans-serif!important;font-size:8px!important;-webkit-text-size-adjust:none;text-size-adjust:none;color:rgba(241,236,224,.85);text-shadow:0 0 2px rgba(0,0,0,.55),0 0 2px rgba(0,0,0,.55);letter-spacing:.03em}
 .lb.city{font-size:9px!important;font-weight:500;letter-spacing:.08em;text-transform:uppercase}
@@ -3253,7 +3255,7 @@ function labelsHTML(){
     dots+=`<button class="cdot ${l.kind}${on?' on':''}${shortOf(l).length?' short':''}" data-act="cdot" data-i="${i}" style="left:${l.c/gw*100}%;top:${l.r/gh*100}%${l.fc?';--fc:'+l.fc:''}"${l.fc?' data-f="1"':''} aria-label="${esc(l.text)}: show how far it extends"></button>`;
     if(on){const pop=popOfCl(l);
       sel=l.cells.map(n=>`<i class="cx" style="left:${n.c/gw*100}%;top:${n.r/gh*100}%;width:${100/gw}%;height:${100/gh}%"></i>`).join('')+
-        `<div class="ccard" style="left:${l.c/gw*100}%;top:${l.r/gh*100}%"><b>${esc(l.text)}</b><br>${TIERN[l.tier]} · ${l.cells.length} square${l.cells.length>1?'s':''} · pop ${fmt(pop)}${(()=>{const f=faithMap().get(plainName(l)),F0=f!=null&&faithOf(f);return F0?`<br>Faith: <span style="color:${F0.col}">●</span> ${esc(F0.name)}${shrinesOf(plainName(l))?' (holy city)':''}`:''})()}${econHTML(l)}<br><button class="btn" data-act="bio" data-n="${esc(plainName(l))}">History</button></div>`}});
+        `<div class="ccard" style="left:${l.c/gw*100}%;top:${l.r/gh*100}%"><b>${esc(l.text)}</b><br>${TIERN[l.tier]} · ${l.cells.length} square${l.cells.length>1?'s':''} · pop ${fmt(pop)}${(()=>{const f=faithMap().get(plainName(l)),F0=f!=null&&faithOf(f);return F0?`<br>Faith: <span style="color:${F0.col}">●</span> ${esc(F0.name)}${shrinesOf(plainName(l))?' (holy city)':''}`:''})()}${econHTML(l)}<br><button class="bio" data-act="bio" data-n="${esc(plainName(l))}">History</button></div>`}});
   if(ins)sel+=`<i class="cx" style="left:${ins.c/gw*100}%;top:${ins.r/gh*100}%;width:${100/gw}%;height:${100/gh}%"></i><div class="ccard insp" style="left:${(ins.c+.5)/gw*100}%;top:${(ins.r+.5)/gh*100}%;transform:translate(${ins.tx}%,${ins.up?'calc(-100% - 14px)':'14px'})">${ins.html}</div>`;
   return `<div class="labwrap"><div class="labels" aria-hidden="true">${L.map(l=>`<span class="lb ${l.kind}" style="left:${l.c/gw*100}%;top:${l.r/gh*100}%;transform:${l.dot?'translate(9px,-50%)':'translate(-50%,-50%)'} rotate(${l.rot}deg)">${esc(l.text)}</span>`).join('')}</div><div class="cext">${sel}${dots}</div></div>`;
 }

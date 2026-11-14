@@ -634,7 +634,7 @@ function ruleText(c){
     case 'climate':return {cold:'The whole map turns colder.',warm:'The whole map turns warmer.',wet:'The whole map turns wetter.',dry:'The whole map turns drier.'}[c.mode]+' The Level die sets how far. Biomes move with it: ice and snow spread in the cold, deserts in the dry.';
     case 'adjust':return 'Change the numbers on three cards by 1 to 3.';
     case 'shuffle':return 'Shuffle the discard pile back into the draw pile.';
-    case 'disaster':if(c.mode==='weather')return `A weather front crosses ${c.units} painted squares and harms no one. The Weather die picks what it is, tilted by the panel's biome and the season: blizzards on cold ground, dust in deserts, storms on wet land. The Level die sets how strong. It passes within a few changes. Storms and blizzards close roads and railways, dust closes roads, and flights are grounded by storms, blizzards, dust and fog. Heat haze adds a level to a wildfire there, and a storm adds one to a flood. Weather also bends the flora (heat scorches it, blizzards frost it, storms flush it green, dust strips it) and the output of nearby villages and ports: good rains lift a harvest, while storm damage, scorching, frost, dust and fog can spoil one.`;return `${c.mode==='any'?'A random disaster':DIS[c.mode].n} strikes ${c.units} painted squares. ${c.mode==='any'?'':DIS[c.mode].w+' '}The Level die sets the damage: 1 to 2 settlements drop a tier, 3 to 4 two tiers, 5 to 6 raze them. Walls take one level less. The scar fades as the map changes.`;
+    case 'disaster':if(c.mode==='weather')return `A weather front crosses ${c.units} painted squares and harms no one. The Weather die picks what it is, tilted by the panel's biome: blizzards on cold ground, dust in deserts, storms on wet land. The Level die sets how strong. It passes within a few changes. Storms and blizzards close roads and railways, dust closes roads, and flights are grounded by storms, blizzards, dust and fog. Heat haze adds a level to a wildfire there, and a storm adds one to a flood. Weather also bends the flora (heat scorches it, blizzards frost it, storms flush it green, dust strips it) and the output of nearby villages and ports: good rains lift a harvest, while storm damage, scorching, frost, dust and fog can spoil one.`;return `${c.mode==='any'?'A random disaster':DIS[c.mode].n} strikes ${c.units} painted squares. ${c.mode==='any'?'':DIS[c.mode].w+' '}The Level die sets the damage: 1 to 2 settlements drop a tier, 3 to 4 two tiers, 5 to 6 raze them. Walls take one level less. The scar fades as the map changes.`;
     case 'event':return {boom:'One settlement booms. Two Place dice pick where, and the Level die sets how many people arrive. The extra people fade away over a few changes.',bust:'Trade dries up in one settlement and people leave to look for work. The Level die sets how many. Some come back over time.',fair:'A great fair fills one settlement and the places it trades with with merchants and visitors, for a short while.',discovery:'A rich find draws prospectors and traders to one settlement. Its population rises for a good while, and science gets a boost.',granary:'One settlement and its trading partners store grain. For a time they cannot go short of food.',refugees:'People flee the hungriest settlement, or the one the dice pick if none is hungry, and settle in the nearest larger place. The Level die sets how many.',invention:'A new method is devised in one settlement and spreads along its roads. People gather where it is used, and science gets a boost.',wonder:'A city raises a wonder. It adds people for good and is named on the map.',exhibition:'A great exhibition in one of the biggest cities draws visitors to every city.',outbreak:'Sickness breaks out in one settlement and follows its roads to the places it trades with. Two Place dice pick where, and the Level die sets how many people die. The dead are missed for a while, and the places hit produce less until it passes.',famine:'The harvest fails in farming villages and hamlets, as many as the Level die allows. People starve, output drops, and the places they trade with feel it.',migration:'People leave one settlement for the nearest as large or larger. The Level die sets how many. The place that loses them produces less for a while and the place that gains them produces more.',festival:'One settlement holds a festival and the places it trades with send visitors. Output rises for a few changes. Nobody is hurt.',dispute:'Two neighbouring realms quarrel over their border. Every road, railway and flight path between them is closed for a while, and their capitals suffer.'}[c.mode];
     case 'realm':return {treaty:'Envoys end a war, or calm the angriest pair of realms if none is at war. The Level die only decides how it is told.',declare:'Two neighbouring realms that are free to fight go to war. The Place dice pick which pair, from the ones with the most tension. Routes across their border close.',uprising:'The biggest realm with a second city sees that city rise and break away as a realm of its own. The two go to war.',coup:'In a realm with two or more cities, the court moves to the second city. The realm takes the new capital\'s name.',alliance:'Two neighbouring realms with little tension swear an alliance. They will not fight each other, and if one goes to war the other joins in against any enemy it borders.'}[c.mode];
     case 'land':return {canal:'A canal is cut across a narrow neck of the biggest landmass and joined to the sea on both sides. It can split a landmass in two. Places in its path are lost.',dam:'A river is dammed and a lake fills low inland ground. The Level die sets how large. Places under it are lost.',inlandsea:'The sea breaks into a low basin in the heart of the biggest landmass and drowns it. The Level die sets how large. Places under it are lost.',iceage:'The world turns bitterly cold and the sea falls. The Level die sets how deep.'}[c.mode];
@@ -1525,7 +1525,7 @@ function viewMap(){
   <div class="maptb${tbMin?' min':''}">${tbMin?'':`<div class="tbrow"><button class="btn" data-act="fit">Fit all</button><button class="btn" data-act="last">Last edit</button><button class="btn" data-act="inspect" aria-pressed="${inspectOn}">${inspectOn?'Inspecting':'Inspect'}</button></div>
     <div class="tbrow"><button class="btn" data-act="photos" aria-pressed="${showPhotos}">Photos</button><button class="btn" data-act="blank" aria-pressed="${showBlank}">Blank terrain</button><button class="btn" data-act="sea" aria-pressed="${showSea}">Sea</button></div>
     <div class="tbrow"><button class="btn" data-act="water" aria-pressed="${showWater}">Rivers</button><button class="btn" data-act="contours" aria-pressed="${showContours}">Contours</button><button class="btn" data-act="walls" aria-pressed="${showWalls}">Walls</button></div>
-    <div class="tbrow"><button class="btn" data-act="climate" aria-pressed="${climMode>0}">${CLIMLAB[climMode]}</button><button class="btn" data-act="season" aria-pressed="${showSeason}">${seasonNow().name}</button><button class="btn" data-act="flora" aria-pressed="${showFlora}">Flora</button></div>
+    <div class="tbrow"><button class="btn" data-act="climate" aria-pressed="${climMode>0}">${CLIMLAB[climMode]}</button><button class="btn" data-act="photoonly" aria-pressed="${photoOnly}">Photos only</button><button class="btn" data-act="flora" aria-pressed="${showFlora}">Flora</button></div>
     <div class="tbrow"><button class="btn" data-act="dots" aria-pressed="${showDots}">Dots</button><button class="btn" data-act="labels" aria-pressed="${showLabels}">Names</button><button class="btn" data-act="trade" aria-pressed="${showTrade}">Trade</button></div>
     <div class="tbrow"><button class="btn" data-act="realms" aria-pressed="${showRealms}">Realms</button><button class="btn" data-act="timeline" aria-pressed="${histBar}">Timeline</button><button class="btn" data-act="stats">Statistics</button></div>`}
     <button class="btn tbh" data-act="tbmin" aria-expanded="${!tbMin}">${tbMin?'▲ Map controls':'▼ Hide controls'}</button></div>`;
@@ -1545,7 +1545,6 @@ function viewOptions(){
       <button class="btn" data-act="trade" aria-pressed="${showTrade}">Trade lines · ${showTrade?'on':'off'}</button>
       <button class="btn" data-act="city" aria-pressed="${showCity}">City plans · ${showCity?'on':'off'}</button>
       <button class="btn" data-act="ind" aria-pressed="${showInd}">Industry marks · ${showInd?'on':'off'}</button>
-      <button class="btn" data-act="smode">Season dial · ${SMLAB[seasonMode]} (${seasonNow().name})</button>
       <button class="btn" data-act="quality">Photo quality · ${['Standard','High','Maximum'][Q-1]} (${Q}×)</button>
       <button class="btn" data-act="play">Time-lapse</button>
       <button class="btn" data-act="export">Export image</button>
@@ -2349,6 +2348,13 @@ function toggleRealmView(){
   if(!showRealms){RSNAP={walls:showWalls,sea:showSea,water:showWater,dots:showDots,contours:showContours,labels:showLabels,trade:showTrade,flora:showFlora,clim:climMode,photos:showPhotos,season:showSeason,ind:showInd,city:showCity,blank:showBlank,inspect:inspectOn};
     showWalls=showSea=showWater=showDots=showContours=showLabels=showTrade=showFlora=showPhotos=showSeason=showInd=showCity=showBlank=false;climMode=0;inspectOn=false;showRealms=true}
   else{const r=RSNAP;if(r){showWalls=r.walls;showSea=r.sea;showWater=r.water;showDots=r.dots;showContours=r.contours;showLabels=r.labels;showTrade=r.trade;showFlora=r.flora;climMode=r.clim;showPhotos=r.photos;showSeason=r.season;showInd=r.ind;showCity=r.city;showBlank=r.blank;inspectOn=r.inspect}RSNAP=null;showRealms=false}}
+/* Photos only is a view like Realms: every layer and name goes off, leaving just the photographs; turning it off puts everything back */
+let photoOnly=false,PHSNAP=null;
+function togglePhotoOnly(){
+  if(showRealms)toggleRealmView();
+  if(!photoOnly){PHSNAP={walls:showWalls,sea:showSea,water:showWater,dots:showDots,contours:showContours,labels:showLabels,trade:showTrade,flora:showFlora,clim:climMode,photos:showPhotos,ind:showInd,city:showCity,blank:showBlank,inspect:inspectOn};
+    showWalls=showSea=showWater=showDots=showContours=showLabels=showTrade=showFlora=showInd=showCity=showBlank=false;showPhotos=true;climMode=0;inspectOn=false;photoOnly=true}
+  else{const r=PHSNAP;if(r){showWalls=r.walls;showSea=r.sea;showWater=r.water;showDots=r.dots;showContours=r.contours;showLabels=r.labels;showTrade=r.trade;showFlora=r.flora;climMode=r.clim;showPhotos=r.photos;showInd=r.ind;showCity=r.city;showBlank=r.blank;inspectOn=r.inspect}PHSNAP=null;photoOnly=false}}
 const REALMCOL=['#e0584a','#4a8fe0','#e0b84a','#5cc08a','#b070d8','#e08a4a'];
 const REALMFORM=[n=>`Kingdom of ${n}`,n=>`Duchy of ${n}`,n=>`The ${n} League`,n=>`Realm of ${n}`,n=>`${n} Dominion`,n=>`Principality of ${n}`,n=>`The ${n} Compact`];
 const rgba=(h,a)=>{const [r,g,b]=hex(h);return `rgba(${r},${g},${b},${a})`};
@@ -3049,11 +3055,14 @@ const drawLandBase=()=>drawLayer('landbase',buildLandBase,!showPhotos);
 /* ---------- seasons: the dial follows the real date (Melbourne by default), flipped for the northern hemisphere ---------- */
 const SEASN=['Spring','Summer','Autumn','Winter'],SMODES=['melb','dev','s0','s1','s2','s3'],SMLAB={melb:'Auto · Melbourne',dev:'Auto · this device',s0:'Spring',s1:'Summer',s2:'Autumn',s3:'Winter'};
 const SOUTHRE=/^(Australia|Antarctica|Pacific\/(Auckland|Fiji|Tongatapu)|America\/(Sao_Paulo|Argentina|Santiago|Montevideo|Lima|La_Paz|Asuncion)|Africa\/(Johannesburg|Maputo|Harare|Windhoek|Lusaka)|Indian\/(Mauritius|Reunion|Antananarivo))/;
-let seasonMode='melb',showSeason=true,SEL=null;
+/* seasons are switched off for now: one flag brings the dial, the tint and the weather tilt back */
+const SEASONS_ON=false;
+let seasonMode='melb',showSeason=SEASONS_ON,SEL=null;
 /* the season is asked for hundreds of times a render and building a date formatter is slow, so the answer is kept for a minute */
 let SNC=null;
 function seasonNow(){const now=Date.now();if(SNC&&SNC.m===seasonMode&&now-SNC.at<60000)return SNC.v;const v=seasonCalc();SNC={m:seasonMode,at:now,v};return v}
 function seasonCalc(){
+  if(!SEASONS_ON)return{name:'Year-round',t:0,k:-1};
   if(/^s[0-3]$/.test(seasonMode)){const k=+seasonMode[1];return{name:SEASN[k],t:[-.1,1,.1,-1][k],k}}
   let tz='Australia/Melbourne';if(seasonMode==='dev'){try{tz=Intl.DateTimeFormat().resolvedOptions().timeZone||tz}catch(e){}}
   let mo,dy;try{const pr=new Intl.DateTimeFormat('en-US',{timeZone:tz,month:'numeric',day:'numeric'}).formatToParts(new Date());mo=+pr.find(x=>x.type==='month').value;dy=+pr.find(x=>x.type==='day').value}catch(e){const d=new Date();mo=d.getMonth()+1;dy=d.getDate()}
@@ -3675,7 +3684,7 @@ function viewRules(){
   <li><b>Wars and unrest:</b> neighbouring realms build tension along their shared border, faster when one is short of supplies or much bigger than the other, and slower when routes link them. Past a threshold a war can break out on its own. Routes between the realms close, both sides lose people each change, and now and then the stronger side takes a border place. A war ends in peace, with the taken places kept, or in conquest if a realm is down to its capital. A large realm with a rival city, shortages or a losing war can also split in a civil war, and the rival city becomes a new realm. The Realms view draws fronts between fighting realms in red.</li>
   <li><b>Faiths:</b> every settlement follows one faith. A place with none takes the faith of a neighbour it is joined to by an open route, or sometimes gives rise to a new one. Faiths spread along roads, rivers, railways and flight paths: big places push harder, and a place with a wonder is hard to turn and becomes a holy city, a shrine. A faith with many places can split, and a far-off group breaks away. A place beside a different faith is tolerant: it gains a little population and speeds science. Ground within two squares of a holy city is the last to be voided or eroded. An Uprising or Coup is more likely in a realm of several faiths. Each place's faith shows as a coloured ring on its dot, and in Statistics under Faiths.</li>
   <li><b>More cards:</b> Boom, Bust, Trade Fair, Discovery, Invention and Exhibition change a settlement's population for a while. Granary shields places from food shortage. Refugees move people from the hungriest place. Wonder adds people for good and names the city. Treaty, Declaration, Alliance, Uprising and Coup act on realms. Canal, Dam and Inland Sea cut water into the biggest landmass (Canal and Inland Sea start in the reserve, as does Sundering, because they split land so hard; add them from the Deck tab if you want them), and Ice Age turns the world cold and drops the sea.</li>
-  <li><b>Weather Front:</b> storms, blizzards, heat haze, dust storms, fog and auroras. The Weather die picks one, tilted by the panel's biome and the season, and the Level die sets its strength. It harms no one and passes within a few changes. Storms and blizzards close roads and railways, dust closes roads, and flights are grounded by storms, blizzards, dust and fog. Closed routes show dashed red on the trade lines and in the settlement card. Heat haze makes a wildfire there one level worse, and a storm does the same for a flood. It also changes the flora on the Flora layer, and a settlement's card and inspect readout show whether its output is up or down while the weather lasts.</li>
+  <li><b>Weather Front:</b> storms, blizzards, heat haze, dust storms, fog and auroras. The Weather die picks one, tilted by the panel's biome, and the Level die sets its strength. It harms no one and passes within a few changes. Storms and blizzards close roads and railways, dust closes roads, and flights are grounded by storms, blizzards, dust and fog. Closed routes show dashed red on the trade lines and in the settlement card. Heat haze makes a wildfire there one level worse, and a storm does the same for a flood. It also changes the flora on the Flora layer, and a settlement's card and inspect readout show whether its output is up or down while the weather lasts.</li>
   <li><b>Rising Tide, Falling Tide:</b> the Level die moves the sea one to three steps.</li>
   <li><b>Cold Snap, Heatwave, Monsoon, Dry Spell:</b> the Level die shifts the climate of the whole map. Turn on Climate in the map controls to see the biomes move.</li></ul>
   <h2>The deck changes itself</h2>
@@ -3969,7 +3978,7 @@ async function fillStats(){
   /* world and land */
   let worldHTML='';
   try{const sc=seaCells(S.seq),lm=landmassInfo(sc),rf=S.rifts||[],kinds3={};for(const r of rf)if(r.seq<=S.seq){const k={canal:'canals',dam:'dams',inlandsea:'inland seas'}[r.kind]||'rifts';kinds3[k]=(kinds3[k]||0)+1}
-    worldHTML=kv([['Landmasses',lm.n],['Islets',lm.islets],['Largest landmass',Math.round(lm.share*100)+'% of land'],['Sea level from size','+'+sc.rise.toFixed(1)],['Tide',(tide>0?'+':'')+tide],['Warmth',(cl.t>0?'+':'')+cl.t],['Rain',(cl.w>0?'+':'')+cl.w],['Season',esc(ss.name)],...Object.entries(kinds3).map(([k,v])=>['Cut by '+k,v]),...((S.reclaims||[]).filter(q=>q<=S.seq).length?[['Reclaimed coasts',(S.reclaims||[]).filter(q=>q<=S.seq).length]]:[])])}catch(e){}
+    worldHTML=kv([['Landmasses',lm.n],['Islets',lm.islets],['Largest landmass',Math.round(lm.share*100)+'% of land'],['Sea level from size','+'+sc.rise.toFixed(1)],['Tide',(tide>0?'+':'')+tide],['Warmth',(cl.t>0?'+':'')+cl.t],['Rain',(cl.w>0?'+':'')+cl.w],...Object.entries(kinds3).map(([k,v])=>['Cut by '+k,v]),...((S.reclaims||[]).filter(q=>q<=S.seq).length?[['Reclaimed coasts',(S.reclaims||[]).filter(q=>q<=S.seq).length]]:[])])}catch(e){}
   /* supply and population */
   const shortC=ALLCL.filter(c=>shortOf(c).length),need={};for(const c of shortC)for(const x of shortOf(c))need[x.label]=(need[x.label]||0)+1;
   const parts=[['Settled population',fmt(popTotal())]];if(eventPop(S.seq))parts.push(['Events',sg(eventPop(S.seq))]);if(supplyPop())parts.push(['Shortages',sg(supplyPop())]);if(warDef())parts.push(['War',sg(warDef())]);if(wonderPop())parts.push(['Wonders',sg(wonderPop())]);
@@ -4094,7 +4103,8 @@ document.addEventListener('click',e=>{
     case 'water':showWater=!showWater;kvSet('water',showWater?'1':'0');render();break;
     case 'sea':showSea=!showSea;kvSet('sea',showSea?'1':'0');render();break;
     case 'walls':showWalls=!showWalls;kvSet('walls',showWalls?'1':'0');render();break;
-    case 'realms':toggleRealmView();render();break;
+    case 'realms':if(photoOnly)togglePhotoOnly();toggleRealmView();render();break;
+    case 'photoonly':togglePhotoOnly();render();break;
     case 'season':showSeason=!showSeason;kvSet('season',showSeason?'1':'0');render();break;
     case 'smode':seasonMode=SMODES[(SMODES.indexOf(seasonMode)+1)%SMODES.length];kvSet('smode',seasonMode);SEL=null;render();break;
     case 'timeline':stopPlay();histBar=!histBar;mapStep=S.seq;render();break;
@@ -4172,7 +4182,7 @@ document.addEventListener('click',e=>{
       if(cloud.mode==='cloud'){
         try{await wipeCloud()}catch(e){console.warn('reset',e)}
       }
-      await kvClear();if(showRealms)toggleRealmView();saveSettings();S=newState();clearCaches();IMG={};RES=null;PH=null;sheet=null;resetArm=false;mapStep=0;userZoom=false;tab='map';save();render();
+      await kvClear();if(showRealms)toggleRealmView();if(photoOnly)togglePhotoOnly();saveSettings();S=newState();clearCaches();IMG={};RES=null;PH=null;sheet=null;resetArm=false;mapStep=0;userZoom=false;tab='map';save();render();
     })();break;
   }
 });
@@ -4288,7 +4298,7 @@ async function importGo(){
     await kvClear();
     S=j.state;S.cur=null;clearCaches();IMG={};RES=null;PH=null;sheet=null;
     for(const id in j.imgs){IMG[id]=j.imgs[id];await kvSet('img:'+id,j.imgs[id])}
-    if(showRealms)toggleRealmView();saveSettings();
+    if(showRealms)toggleRealmView();if(photoOnly)togglePhotoOnly();saveSettings();
     if(cloud.mode==='cloud')await migrateLocal();else save();
     pendingImport=null;backupMsg='Map restored.';mapStep=S.seq;userZoom=false;tab='map';
   }catch(e){console.warn(e);backupMsg='Restore failed: '+(e&&e.message||'error')}
@@ -4340,7 +4350,7 @@ for(const id of['camIn','libIn'])$(id).addEventListener('change',e=>{const f=e.t
   if(all.flora==='1')showFlora=true;
   if(all.clim>='1'&&all.clim<='3')climMode=+all.clim;
   if(all.photos==='0')showPhotos=false;
-  if(all.season==='0')showSeason=false;
+  if(all.season==='0'||!SEASONS_ON)showSeason=false;
   if(SMODES.includes(all.smode))seasonMode=all.smode;
   if(all.walls==='0')showWalls=false;
   if(all.sea==='0')showSea=false;
