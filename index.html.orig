@@ -2099,26 +2099,31 @@ const art=w=>/^[aeiou]/i.test(w)?'an':'a';
 /* the greatest city of an age, kept as {n, p, f} (name, people, faith) */
 function bigCity(){const fm=faithMap(),big=(ALLCL||[]).filter(c=>c.kind==='city').sort((a,b)=>popOfCl(b)-popOfCl(a))[0];if(!big)return null;const f=fm.get(plainName(big)),F0=f!=null&&faithOf(f);return {n:plainName(big),p:popOfCl(big),f:F0?F0.name:''}}
 function annalFor(i,live){
-  const st=ageStart(i);if(st==null)return '';const nx=ageStart(i+1),end=live||nx==null?S.seq+1:nx,inR=q=>q>=st&&q<end,n=Math.max(0,end-st-(live?1:0)),nm=AGES[i].n,out=[];
-  const big=live?bigCity():(S.annalBig||{})[i];
-  out.push(`The ${nm} ${live?'has lasted':'lasted'} ${n} change${n===1?'':'s'}${live?' so far':''}${big&&big.n?`, and ${big.n} ${live?'is':'rose to be'} its greatest city, home to ${fmt(big.p)} people${big.f?` who followed ${big.f}`:''}`:''}.`);
+  const st=ageStart(i);if(st==null)return '';const nx=ageStart(i+1),end=live||nx==null?S.seq+1:nx,inR=q=>q>=st&&q<end,n=Math.max(0,end-st-(live?1:0)),nm=AGES[i].n,out=[],v=hash('annal'+nm)%3;
+  const big=live?bigCity():(S.annalBig||{})[i],chg=`${n} change${n===1?'':'s'}`;
+  const strong=big&&big.n?`${fmt(big.p)} strong${big.f?` and faithful to ${big.f}`:''}`:'';
+  if(big&&big.n)out.push(live?(v===0?`The ${nm} is ${chg} old, and ${big.n} is its greatest city, ${strong}.`:v===1?`${chg.charAt(0).toUpperCase()+chg.slice(1)} into the ${nm}, ${big.n} stands as its greatest city, ${strong}.`:`So far the ${nm} has lasted ${chg}. ${big.n} is its greatest city, ${strong}.`)
+    :(v===0?`The ${nm} ran for ${chg}. ${big.n} rose to be its greatest city, ${strong}.`:v===1?`Across ${chg}, ${big.n} grew into the greatest city of the ${nm}, ${strong}.`:`The ${nm} lasted ${chg}, and in that time ${big.n} became its greatest city, ${strong}.`));
+  else out.push(live?`The ${nm} is ${chg} old.`:`The ${nm} lasted ${chg}.`);
   const F=[],Lo=[];for(const [nmx,r] of Object.entries(S.pl||{}))for(const e of r.ev)if(inR(e.s)){if(/^Founded/.test(e.x)&&!F.includes(nmx))F.push(nmx);else if(/^Was lost/.test(e.x)&&!Lo.includes(nmx))Lo.push(nmx)}
-  const lst=(a,w)=>`${joinL(a.slice(0,3))}${a.length>3?` and ${numw(a.length-3)} more`:''} ${a.length===1?'was':'were'} ${w}`;
-  if(F.length||Lo.length)out.push(F.length&&Lo.length?`${lst(F,'founded')}, while ${lst(Lo,'lost')}.`:`${lst(F.length?F:Lo,F.length?'founded':'lost')}.`);
+  const lst=a=>`${joinL(a.slice(0,3))}${a.length>3?` and ${numw(a.length-3)} more`:''}`;
+  if(F.length&&Lo.length)out.push(`Settlers founded ${lst(F)}, but ${lst(Lo)} fell to ruin.`);
+  else if(F.length)out.push(`Settlers founded ${lst(F)}.`);
+  else if(Lo.length)out.push(`${capf(lst(Lo))} fell to ruin.`);
   const ds=[...new Set((((S.sci||{}).got)||[]).filter(g=>inR(g.seq)).map(g=>g.id))].map(id=>{const d=discOf(id);return d&&d[1]}).filter(Boolean).map(t=>t.toLowerCase());
-  if(ds.length)out.push(ds.length===1?`The people learned ${ds[0]}.`:`The people learned ${joinL(ds.slice(0,3))}${ds.length>3?`, and ${numw(ds.length-3)} other art${ds.length>4?'s':''}`:''}.`);
-  const ws=(S.wonders||[]).filter(w=>inR(w.seq));
-  if(ws.length)out.push(capf(ws.map((w,k)=>k===0?`at ${w.n} they raised the ${w.wn}`:`at ${w.n} the ${w.wn}`).join(', and '))+'.');
+  const ws=(S.wonders||[]).filter(w=>inR(w.seq)),wtxt=ws.length?`raised ${joinL(ws.map(w=>`the ${w.wn} at ${w.n}`))}`:'';
+  const dtxt=ds.length?`learned ${joinL(ds.slice(0,3))}${ds.length>3?`, with ${numw(ds.length-3)} more art${ds.length>4?'s':''} besides`:''}`:'';
+  if(dtxt&&wtxt)out.push(`The people ${dtxt}, and ${wtxt}.`);else if(dtxt||wtxt)out.push(`The people ${dtxt||wtxt}.`);
   const nt=S.log.filter(l=>l.note&&l.seq!=null&&inR(l.seq)),wars=[],fell=[],civ=[];
   for(const l of nt){let m;if(l.cat==='war'&&(m=/^War breaks out between (.+?) and (.+?)\./.exec(l.text||'')))wars.push([m[1],m[2]]);else if(l.cat==='war'&&(m=/^(.+?) has fallen\./.exec(l.text||'')))fell.push(m[1]);else if(/broke into civil war/.test(l.text||''))civ.push(l.text)}
-  if(wars.length)out.push(`${capf(numw(wars.length))} war${wars.length>1?'s':''} broke out${wars.length===1?` between ${wars[0][0]} and ${wars[0][1]}`:`, the first between ${wars[0][0]} and ${wars[0][1]}`}.`);
-  if(fell.length)out.push(`${joinL(fell.slice(0,3))} fell.`);
-  if(civ.length)out.push(`${capf(numw(civ.length))} realm${civ.length>1?'s were':' was'} torn by civil war.`);
+  if(wars.length)out.push(wars.length===1?`War broke out between ${wars[0][0]} and ${wars[0][1]}.`:`War came ${wars.length===2?'twice':numw(wars.length)+' times'}, first between ${wars[0][0]} and ${wars[0][1]}.`);
+  if(fell.length)out.push(`${joinL(fell.slice(0,3))} fell in defeat.`);
+  if(civ.length)out.push(civ.length===1?'Civil war tore one realm apart.':`Civil war tore ${numw(civ.length)} realms apart.`);
   const dc={};for(const l of S.log)if(l.seq!=null&&inR(l.seq)&&!l.note&&l.kind==='disaster'&&!/weather/i.test(l.card||''))dc[l.card.toLowerCase()]=(dc[l.card.toLowerCase()]||0)+1;
   const dt=Object.entries(dc).sort((a,b)=>b[1]-a[1]).slice(0,3);
-  if(dt.length)out.push(`${capf(joinL(dt.map(([w,c])=>c===1?`${art(w)} ${w}`:`${numw(c)} ${plur(w,c)}`)))} struck.`);
+  if(dt.length)out.push(`${capf(joinL(dt.map(([w,c])=>c===1?`${art(w)} ${w}`:`${numw(c)} ${plur(w,c)}`)))} struck the land.`);
   const sc=nt.find(l=>l.cat==='faith'&&/schism/i.test(l.text||''));if(sc)out.push(sc.text);
-  const np=S.log.filter(l=>l.seq!=null&&inR(l.seq)&&!l.note&&l.kind==='newpanel').length;if(np)out.push(`The land grew by ${numw(np)} panel${np>1?'s':''}.`);
+  const np=S.log.filter(l=>l.seq!=null&&inR(l.seq)&&!l.note&&l.kind==='newpanel').length;if(np)out.push(`The map spread across ${numw(np)} new panel${np>1?'s':''}.`);
   return out.join(' ')}
 function writeAnnal(i){
   S.annalBig=S.annalBig||{};const big=bigCity();if(big)S.annalBig[i]=big;
@@ -3568,7 +3573,7 @@ async function buildSea(step){
   g.putImageData(im,0,0);return SEAL={sig:sc.sig,canvas:cv};
 }
 /* Every map layer in drawing order: [canvas id, builder, is it showing]. The map, the exported image and the single-panel image all walk this one list, so they cannot fall out of step. */
-const LAYERS=[['landbase',buildLandBase,()=>!showPhotos],['sea',buildSea,()=>showSea],['terrain',buildTerrain,()=>true],['climate',buildClimate,()=>climMode>0],['season',buildSeason,()=>showSeason],['water',buildWater,()=>showWater],['rocks',buildRocks,()=>true],['flora',buildFlora,()=>showFlora],['realms',buildRealms,()=>showRealms],['cities',buildCities,()=>showCity],['industry',buildIndustry,()=>showInd],['trade',buildTrade,()=>showTrade],['ice',buildIce,()=>!showRealms],['war',buildWar,()=>true],['scars',buildScars,()=>true]];
+const LAYERS=[['landbase',buildLandBase,()=>!showPhotos],['sea',buildSea,()=>showSea],['terrain',buildTerrain,()=>true],['climate',buildClimate,()=>climMode>0],['season',buildSeason,()=>showSeason],['water',buildWater,()=>showWater],['rocks',buildRocks,()=>true],['flora',buildFlora,()=>showFlora],['realms',buildRealms,()=>showRealms],['cities',buildCities,()=>showCity],['industry',buildIndustry,()=>showInd],['trade',buildTrade,()=>showTrade],['war',buildWar,()=>true],['scars',buildScars,()=>true]];
 /* one written name on an exported image, at scale F */
 function drawLabel(g,l,F){
   g.rotate(l.rot*Math.PI/180);if(l.dot){drawDot(g,l.kind,0,0,F,l.fc);g.translate(9*F,0);g.textAlign='left'}
@@ -3602,7 +3607,7 @@ function refreshMapStep(){
   g.querySelectorAll('.slot[data-act=open]').forEach(el=>{const p=S.panels[el.dataset.k],v=p&&visibleVersion(p,mapStep),im=el.querySelector('img');
     if(v){const u=IMG[v.img];if(im.getAttribute('src')!==u)im.src=u;el.classList.remove('ghost')}else{el.classList.add('ghost');im.removeAttribute('src')}});
   const s=$('scrub');if(s&&+s.value!==mapStep)s.value=mapStep;
-  warmClim();drawLandBase();drawSea();drawTerrain();drawClimate();drawSeason();drawWater();drawRocks();drawFlora();drawRealms();drawCities();drawIndustry();drawTrade();drawIce();drawWar();drawScars();drawContours();
+  warmClim();drawLandBase();drawSea();drawTerrain();drawClimate();drawSeason();drawWater();drawRocks();drawFlora();drawRealms();drawCities();drawIndustry();drawTrade();drawWar();drawScars();drawContours();
   const l=$('stepLbl');if(l)l.textContent=`Change ${mapStep} of ${S.seq}`;const si=$('stepInfo');if(si)si.innerHTML=stepInfo(mapStep);
   const pb=$('playBtn');if(pb)pb.textContent=playT?'Pause':'Play';
 }
