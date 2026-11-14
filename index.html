@@ -3477,10 +3477,12 @@ function seaCells(step){
   const bb=bbox(),gw=(bb.maxx-bb.minx+1)*COLS,gh=(bb.maxy-bb.miny+1)*ROWS,tide=tideAt(step),recl=Math.min(2,.7*(S.reclaims||[]).filter(q=>q<=step).length);
   const sig=SD()+step+':'+tide+':'+recl+':'+(S.rifts||[]).filter(r=>r.seq<=step).length+':'+HWN+':'+JSON.stringify(bb)+Object.values(S.panels).map(p=>{const v=visibleVersion(p,step);return p.key+(v?v.seq:'-')}).join('|');
   if(SEAC&&SEAC.sig===sig)return SEAC;
-  const st=new Uint8Array(gw*gh),vd=new Uint8Array(gw*gh),low=new Float32Array(gw*gh).fill(9);let PC=0;
+  const st=new Uint8Array(gw*gh),vd=new Uint8Array(gw*gh),pr=new Uint8Array(gw*gh),low=new Float32Array(gw*gh).fill(9);let PC=0;
   for(const k in S.panels){const p=S.panels[k],m=metaAt(p,step);if(!m)continue;const ox=(p.x-bb.minx)*COLS,oy=(bb.maxy-p.y)*ROWS,v=visibleVersion(p,step),L=v&&HCACHE[v.img];
-    for(let i=0;i<N;i++){const f=m.f&&m.f.length?m.f[i]:0,q=(oy+((i/COLS)|0))*gw+ox+i%COLS;st[q]=f===0?1:2;if(f!==0)PC++;
+    for(let i=0;i<N;i++){const f=m.f&&m.f.length?m.f[i]:0,q=(oy+((i/COLS)|0))*gw+ox+i%COLS;st[q]=f===0?1:2;if(f!==0)PC++;if(f===1&&p.t&&p.t[i]>0)pr[q]=p.t[i]>=2?2:1;
       if(f===2){low[q]=-.5;vd[q]=1}else if(f===1&&L&&!(m.w&&m.w[i]))low[q]=L[i]*.9}}
+  /* settlements keep a dry margin: a high tide never spills over a settled square, or the square beside a village, town or city (so ports are not drowned) */
+  for(let c=0;c<gw*gh;c++)if(pr[c]===2){const x=c%gw,y=(c/gw)|0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy;if(xx<0||yy<0||xx>=gw||yy>=gh)continue;const n=yy*gw+xx;if(!pr[n])pr[n]=3}}
   const rise=Math.max(0,Math.min(2,(PC/N-8)/12)),te=tide+rise-recl,R=6+3*te,d=new Int16Array(gw*gh).fill(32000),q=[];
   for(let c=0;c<gw*gh;c++){const x=c%gw,y=(c/gw)|0;if(st[c]===0){d[c]=0;q.push(c)}else if(st[c]===1&&(x===0||y===0||x===gw-1||y===gh-1)){d[c]=1;q.push(c)}}
   for(let h=0;h<q.length;h++){const c=q[h],x=c%gw,y=(c/gw)|0;
@@ -3500,7 +3502,7 @@ function seaCells(step){
   if(te>=.5){const lvl=Math.min(.5,.15*te),dl=3+Math.round(rise*3),sd=new Int8Array(gw*gh).fill(-1),qs=[];
     for(let c=0;c<gw*gh;c++)if(sea[c]&&st[c]!==0){sd[c]=0;qs.push(c)}
     for(let h=0;h<qs.length;h++){const c=qs[h],x=c%gw,y=(c/gw)|0;if(sd[c]>=dl)continue;
-      for(const n of [x>0?c-1:-1,x<gw-1?c+1:-1,y>0?c-gw:-1,y<gh-1?c+gw:-1]){if(n<0||sea[n]||st[n]!==2||low[n]>=lvl)continue;sea[n]=1;fl[n]=1;sd[n]=sd[c]+1;qs.push(n)}}}
+      for(const n of [x>0?c-1:-1,x<gw-1?c+1:-1,y>0?c-gw:-1,y<gh-1?c+gw:-1]){if(n<0||sea[n]||st[n]!==2||pr[n]||low[n]>=lvl)continue;sea[n]=1;fl[n]=1;sd[n]=sd[c]+1;qs.push(n)}}}
   for(const q of rq)fl[q]=1;
   /* the sea never covers a void: water may pass through on its way, but the void keeps its own look */
   for(let c=0;c<gw*gh;c++)if(vd[c]){sea[c]=0;fl[c]=0}
